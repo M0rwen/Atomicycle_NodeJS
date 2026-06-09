@@ -1,0 +1,59 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+  <a class="navbar-brand" href="home.html">Atomicycle</a>
+  <button
+    class="navbar-toggler"
+    type="button"
+    data-toggle="collapse"
+    data-target="#navbarNav"
+    aria-controls="navbarNav"
+    aria-expanded="false"
+    aria-label="Toggle navigation"
+  >
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="collapse navbar-collapse" id="navbarNav">
+    <ul class="navbar-nav ml-auto">
+      <li class="nav-item active">
+        <a class="nav-link" href="home.html">Home</a>
+      </li>
+      <li class="nav-item" id="itemsMenu">
+        <a class="nav-link" href="item.html">Items</a>
+      </li>
+      <li class="nav-item d-none" id="usersMenu">
+        <a class="nav-link" href="users.html">Users</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="profile.html">Profile</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="register.html">Register</a>
+      </li>
+      <li class="nav-item" id="log">
+        <a class="nav-link" href="login.html">Login</a>
+      </li>
+    </ul>
+  </div>
+</nav>
+
+<script>
+  (function () {
+    const token = sessionStorage.getItem('token');
+    const role = sessionStorage.getItem('role') ? JSON.parse(sessionStorage.getItem('role')) : 'user';
+    const loginLink = document.querySelector('a.nav-link[href="login.html"]');
+    const usersMenu = document.getElementById('usersMenu');
+
+    if (token && loginLink) {
+      loginLink.textContent = 'Logout';
+      loginLink.setAttribute('href', '#');
+      loginLink.addEventListener('click', function (event) {
+        event.preventDefault();
+        sessionStorage.clear();
+        window.location.href = 'login.html';
+      });
+    }
+
+    if (role === 'admin' && usersMenu) {
+      usersMenu.classList.remove('d-none');
+    }
+  })();
+</script>

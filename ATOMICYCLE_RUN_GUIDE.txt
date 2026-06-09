@@ -1,0 +1,131 @@
+ATOMICYCLE Project Run Guide
+
+Project name: Atomicycle
+Frontend folder: itcp237-js-s-2026-master
+Backend folder: node-s-2026-master
+
+1. What this project is
+This project is split into two parts:
+- Frontend: static HTML, CSS, and JavaScript files.
+- Backend: Node.js + Express CRUD API connected to MySQL.
+
+The frontend scripts are already pointing to the backend at http://localhost:4000, so the Node.js server should run on port 4000 unless you also update the frontend JavaScript files.
+
+2. Requirements
+- Node.js installed
+- MySQL or XAMPP/MySQL installed
+- A database created for the project
+- A browser
+
+3. Backend setup
+Open a terminal in the backend folder:
+
+cd node-s-2026-master
+
+Install dependencies:
+
+npm install
+
+Create a .env file in the backend folder with these values:
+
+PORT=4000
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=your_mysql_password
+DB_NAME=your_database_name
+JWT_SECRET=your_secret_key
+
+If you want the authentication token to be emailed after login, also add:
+
+SMTP_HOST=your_smtp_host
+SMTP_PORT=587
+SMTP_EMAIL=your_smtp_email
+SMTP_PASSWORD=your_smtp_password
+SMTP_FROM_NAME=Atomicycle
+SMTP_FROM_EMAIL=your_from_email
+
+Start the Node.js server:
+
+npm start
+
+If everything is correct, the server should run on port 4000.
+
+4. Frontend setup
+Open the frontend folder:
+
+itcp237-js-s-2026-master
+
+Run the frontend using one of these methods:
+- VS Code Live Server extension
+- XAMPP/Apache
+- Any local static web server
+
+Do not open the HTML files directly with the file path if the browser blocks API requests. Serve them through a local web server instead.
+
+5. Main API endpoints
+The Node.js backend provides these important routes:
+- GET /api/v1/items
+- GET /api/v1/items/:id
+- POST /api/v1/items
+- PUT /api/v1/items/:id
+- DELETE /api/v1/items/:id
+- POST /api/v1/register
+- POST /api/v1/login
+- POST /api/v1/update-profile
+- DELETE /api/v1/deactivate
+- GET /api/v1/users
+- PATCH /api/v1/users/:id/role
+- DELETE /api/v1/users/:id
+- POST /api/v1/create-order
+- GET /api/v1/address-chart
+- GET /api/v1/sales-chart
+- GET /api/v1/items-chart
+
+6. Important notes
+- This backend is Node.js with Express, not PHP.
+- Protected routes need an Authorization header with a Bearer token.
+- Item create and update requests use multipart/form-data because they upload an image.
+- The users table must have these columns for mp5/mp6 to work: `role`, `token`, and `deleted_at`.
+- If those columns are missing, run this SQL in MySQL:
+
+ALTER TABLE users ADD COLUMN role VARCHAR(20) NOT NULL DEFAULT 'user';
+ALTER TABLE users ADD COLUMN token TEXT NULL;
+ALTER TABLE users ADD COLUMN deleted_at DATETIME NULL;
+
+- To create the Atomicycle admin account, run this SQL after adding the columns:
+
+INSERT INTO users (name, email, password, role)
+VALUES ('Atomicycle Admin', 'admin@atomicycle.local', '$2b$10$tdJSZKUvuXYPfpOhYvHRju7pirlNrMfonzCZnbXzlYyWTWzMV0LjS', 'admin');
+
+- Admin login credentials:
+	- Email: admin@atomicycle.local
+	- Password: Admin@12345
+- If you change the backend port, update every frontend file that uses http://localhost:4000.
+
+7. Suggested run order
+1. Start MySQL.
+2. Check that the database name in .env matches your imported database.
+3. Run the SQL above if the users table does not already have role, token, and deleted_at.
+4. Insert the admin account SQL.
+5. Start the backend with npm start.
+6. Start the frontend through Live Server or another local server.
+7. Test login, items, cart, orders, and users management pages.
+
+8. If the app does not load
+- Check that the backend is running on port 4000.
+- Check that the .env file values are correct.
+- Check that the MySQL tables exist.
+- Check the browser console for CORS or network errors.
+- Check the backend terminal for SQL or authentication errors.
+
+9. How to test mp5 and mp6
+1. Open register.html and create a normal user account.
+2. Open login.html and log in with the normal user account.
+3. Confirm login returns a token, saves it in the users table, and stores it in sessionStorage.
+4. Log out, then log in using the admin account above.
+5. Confirm the admin is redirected to users.html.
+6. On users.html, confirm the DataTable loads all active users.
+7. Change a user role from user to admin and click Save Role.
+8. Confirm the role changes in the table and in the database.
+9. Click Deactivate on a user and confirm the user disappears from the list.
+10. Use the admin token in the request headers if you test the API in Postman or Thunder Client.
