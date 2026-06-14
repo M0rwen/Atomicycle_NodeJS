@@ -6,37 +6,72 @@ $(document).ready(function () {
         return userId ?? '';
     }
 
-    $("#register").on('click', function (e) {
-        e.preventDefault();
-        let name = $("#name").val()
-        let email = $("#email").val()
-        let password = $("#password").val()
-        let user = {
-            name,
-            email,
-            password
-        }
-        $.ajax({
-            method: "POST",
-            url: `${url}api/v1/register`,
-            data: JSON.stringify(user),
-            processData: false,
-            contentType: 'application/json; charset=utf-8',
-            dataType: "json",
-            success: function (data) {
-                console.log(data);
-                Swal.fire({
-                    icon: "success",
-                    text: "register success",
-                    position: 'bottom-right'
-
-                });
+    if ($('#registerForm').length && $.fn.validate) {
+        $('#registerForm').validate({
+            rules: {
+                name: {
+                    required: true,
+                    minlength: 2,
+                },
+                email: {
+                    required: true,
+                    email: true,
+                },
+                password: {
+                    required: true,
+                    minlength: 6,
+                },
             },
-            error: function (error) {
-                console.log(error);
-            }
+            messages: {
+                name: {
+                    required: 'Name is required',
+                    minlength: 'Name must be at least 2 characters',
+                },
+                email: {
+                    required: 'Email is required',
+                    email: 'Enter a valid email address',
+                },
+                password: {
+                    required: 'Password is required',
+                    minlength: 'Password must be at least 6 characters',
+                },
+            },
+            submitHandler: function (form) {
+                const user = {
+                    name: $('#name').val(),
+                    email: $('#email').val(),
+                    password: $('#password').val(),
+                };
+
+                $.ajax({
+                    method: 'POST',
+                    url: `${url}api/v1/register`,
+                    data: JSON.stringify(user),
+                    processData: false,
+                    contentType: 'application/json; charset=utf-8',
+                    dataType: 'json',
+                    success: function () {
+                        Swal.fire({
+                            icon: 'success',
+                            text: 'Registration successful. Please login.',
+                            position: 'bottom-right',
+                        }).then(() => {
+                            window.location.href = 'login.html';
+                        });
+                    },
+                    error: function (error) {
+                        Swal.fire({
+                            icon: 'error',
+                            text: error.responseJSON?.error || 'Unable to register',
+                            position: 'bottom-right',
+                        });
+                    },
+                });
+
+                return false;
+            },
         });
-    });
+    }
 
     $('#avatar').on('change', function () {
         const file = this.files[0];
@@ -51,55 +86,74 @@ $(document).ready(function () {
         }
     });
 
-    $("#login").on('click', function (e) {
-        e.preventDefault();
-
-        let email = $("#email").val()
-        let password = $("#password").val()
-        let user = {
-            email,
-            password
-        }
-        $.ajax({
-            method: "POST",
-            url: `${url}api/v1/login`,
-            data: JSON.stringify(user),
-            processData: false,
-            contentType: 'application/json; charset=utf-8',
-            dataType: "json",
-            success: function (data) {
-                console.log(data);
-                Swal.fire({
-                    text: data.success,
-                    showConfirmButton: false,
-                    position: 'bottom-right',
-                    timer: 1000,
-                    timerProgressBar: true
-
-                });
-                sessionStorage.setItem('token', JSON.stringify(data.token))
-                sessionStorage.setItem('user', JSON.stringify(data.user.id))
-                sessionStorage.setItem('role', JSON.stringify(data.user.role || 'user'))
-                if ((data.user.role || 'user') === 'admin') {
-                    window.location.href = 'users.html'
-                    return;
-                }
-                window.location.href = 'profile.html'
+    if ($('#loginForm').length && $.fn.validate) {
+        $('#loginForm').validate({
+            rules: {
+                email: {
+                    required: true,
+                    email: true,
+                },
+                password: {
+                    required: true,
+                    minlength: 6,
+                },
             },
-            error: function (error) {
-                console.log(error);
-                Swal.fire({
-                    icon: "error",
-                    text: error.responseJSON.message,
-                    showConfirmButton: false,
-                    position: 'bottom-right',
-                    timer: 1000,
-                    timerProgressBar: true
+            messages: {
+                email: {
+                    required: 'Email is required',
+                    email: 'Enter a valid email address',
+                },
+                password: {
+                    required: 'Password is required',
+                    minlength: 'Password must be at least 6 characters',
+                },
+            },
+            submitHandler: function () {
+                const user = {
+                    email: $('#email').val(),
+                    password: $('#password').val(),
+                };
 
+                $.ajax({
+                    method: 'POST',
+                    url: `${url}api/v1/login`,
+                    data: JSON.stringify(user),
+                    processData: false,
+                    contentType: 'application/json; charset=utf-8',
+                    dataType: 'json',
+                    success: function (data) {
+                        Swal.fire({
+                            text: data.success,
+                            showConfirmButton: false,
+                            position: 'bottom-right',
+                            timer: 1000,
+                            timerProgressBar: true,
+                        });
+                        sessionStorage.setItem('token', JSON.stringify(data.token));
+                        sessionStorage.setItem('user', JSON.stringify(data.user.id));
+                        sessionStorage.setItem('role', JSON.stringify(data.user.role || 'user'));
+                        if ((data.user.role || 'user') === 'admin') {
+                            window.location.href = 'users.html';
+                            return;
+                        }
+                        window.location.href = 'profile.html';
+                    },
+                    error: function (error) {
+                        Swal.fire({
+                            icon: 'error',
+                            text: error.responseJSON?.message || 'Login failed',
+                            showConfirmButton: false,
+                            position: 'bottom-right',
+                            timer: 1000,
+                            timerProgressBar: true,
+                        });
+                    },
                 });
-            }
+
+                return false;
+            },
         });
-    });
+    }
 
     $("#updateBtn").on('click', function (event) {
         event.preventDefault();

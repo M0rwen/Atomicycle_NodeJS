@@ -2,6 +2,8 @@ $(document).ready(function () {
     $("#home").load("header.html")
     const url = 'http://localhost:4000'
     const token = sessionStorage.getItem('token') ? JSON.parse(sessionStorage.getItem('token')) : null
+    const role = sessionStorage.getItem('role') ? JSON.parse(sessionStorage.getItem('role')) : 'user'
+    const isAdmin = role === 'admin'
     const resolveImagePath = (value) => {
         if (!value) {
             return '';
@@ -46,7 +48,7 @@ $(document).ready(function () {
             dataSrc: 'rows',
         },
         dom: 'Bfrtip',
-        buttons: [
+        buttons: isAdmin ? [
             'pdf',
             'excel',
             {
@@ -59,7 +61,7 @@ $(document).ready(function () {
                     $('#itemImage').remove()
                 }
             }
-        ],
+        ] : ['pdf', 'excel'],
         columns: [
             { data: 'item_id' },
             {
@@ -77,6 +79,10 @@ $(document).ready(function () {
             {
                 data: null,
                 render: function (data, type, row) {
+                    if (!isAdmin) {
+                        return '';
+                    }
+
                     return "<a href='#' class = 'editBtn' id='editbtn' data-id=" + data.item_id + "><i class='fas fa-edit' aria-hidden='true' style='font-size:24px' ></i></a><a href='#'  class='deletebtn' data-id=" + data.item_id + "><i  class='fas fa-trash-alt' style='font-size:24px; color:red' ></a></i>";
                 }
             }
@@ -84,6 +90,9 @@ $(document).ready(function () {
     });
 
     $("#itemSubmit").on('click', function (e) {
+        if (!isAdmin) {
+            return;
+        }
         e.preventDefault();
         var data = $('#iform')[0];
         console.log(data);
@@ -138,6 +147,9 @@ $(document).ready(function () {
     });
 
     $('#itable tbody').on('click', 'a.editBtn', function (e) {
+        if (!isAdmin) {
+            return;
+        }
         e.preventDefault();
         $('#itemImage').remove()
         $('#itemId').remove()
@@ -180,6 +192,9 @@ $(document).ready(function () {
     });
 
     $("#itemUpdate").on('click', function (e) {
+        if (!isAdmin) {
+            return;
+        }
         e.preventDefault();
         var id = $('#itemId').val();
         console.log(id);
@@ -220,6 +235,9 @@ $(document).ready(function () {
     });
 
     $('#itable tbody').on('click', 'a.deletebtn', function (e) {
+        if (!isAdmin) {
+            return;
+        }
         e.preventDefault();
         var table = $('#itable').DataTable();
         var id = $(this).data('id');

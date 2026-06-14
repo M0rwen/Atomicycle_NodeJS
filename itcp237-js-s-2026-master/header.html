@@ -22,6 +22,9 @@
       <li class="nav-item d-none" id="usersMenu">
         <a class="nav-link" href="users.html">Users</a>
       </li>
+      <li class="nav-item d-none" id="transactionsMenu">
+        <a class="nav-link" href="transactions.html">Transactions</a>
+      </li>
       <li class="nav-item">
         <a class="nav-link" href="profile.html">Profile</a>
       </li>
@@ -41,6 +44,7 @@
     const role = sessionStorage.getItem('role') ? JSON.parse(sessionStorage.getItem('role')) : 'user';
     const loginLink = document.querySelector('a.nav-link[href="login.html"]');
     const usersMenu = document.getElementById('usersMenu');
+    const transactionsMenu = document.getElementById('transactionsMenu');
 
     if (token && loginLink) {
       loginLink.textContent = 'Logout';
@@ -54,6 +58,10 @@
 
     if (role === 'admin' && usersMenu) {
       usersMenu.classList.remove('d-none');
+    }
+
+    if (role === 'admin' && transactionsMenu) {
+      transactionsMenu.classList.remove('d-none');
     }
   })();
 </script>

@@ -107,7 +107,7 @@ $(document).ready(function () {
                     // alert(data.status);
                     Swal.fire({
                         icon: "success",
-                        text: data.status,
+                        text: data.message || 'Transaction complete',
                     });
                     localStorage.removeItem('cart')
                     renderCart();
