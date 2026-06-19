@@ -17,6 +17,19 @@ $(document).ready(function () {
     return cart ? JSON.parse(cart) : [];
   }
 
+  const updateCartCount = () => {
+    const cart = getCart();
+    itemCount = cart.reduce((total, item) => total + item.quantity, 0);
+    if (itemCount > 0) {
+      $('#itemCount').text(itemCount).css('display', 'inline-block');
+    } else {
+      $('#itemCount').css('display', 'none');
+    }
+  }
+
+  // Initialize cart count on page load
+  updateCartCount();
+
   const saveCart = cart => {
     localStorage.setItem('cart', JSON.stringify(cart));
   }
@@ -350,9 +363,7 @@ $(document).ready(function () {
       });
     }
     saveCart(cart);
-
-    itemCount++;
-    $('#itemCount').text(itemCount).css('display', 'block');
+    updateCartCount();
     $('#productDetailsModal').modal('hide')
     console.log(cart)
 
