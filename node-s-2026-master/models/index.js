@@ -38,7 +38,7 @@ const User = sequelize.define('User', {
 });
 
 const Customer = sequelize.define('Customer', {
-    customer_id: {
+    id: {
         type: DataTypes.INTEGER,
         autoIncrement: true,
         primaryKey: true,
@@ -119,6 +119,32 @@ const OrderInfo = sequelize.define('OrderInfo', {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
         defaultValue: 0,
+    },
+    payment_method: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        defaultValue: 'cash',
+    },
+    delivery_status: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        defaultValue: 'pending',
+    },
+    delivery_name: {
+        type: DataTypes.STRING,
+        allowNull: true,
+    },
+    delivery_address: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+    },
+    delivery_phone: {
+        type: DataTypes.STRING,
+        allowNull: true,
+    },
+    notes: {
+        type: DataTypes.TEXT,
+        allowNull: true,
     },
 }, {
     tableName: 'orderinfo',

@@ -36,6 +36,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
    
    
+    <link rel="stylesheet" href="css/style.css" />
     <script
       src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.16.1/sweetalert2.min.js"
       integrity="sha512-LGHBR+kJ5jZSIzhhdfytPoEHzgaYuTRifq9g5l6ja6/k9NAOsAi5dQh4zQF6JIRB8cAYxTRedERUF+97/KuivQ=="
@@ -46,50 +47,45 @@
     <script src="js/user.js"></script>
     <title>Login</title>
   </head>
-  <body>
-    <div id="loginBody"></div>
-    
-    
-    <form id="loginForm" style="max-width: 400px; margin: auto">
-      <h2>Login</h2>
-      
-      <div style="margin-bottom: 15px">
-        <label for="email">Email:</label><br />
-        <input
-          type="email"
-          id="email"
-          name="email"
-          required
-          style="width: 100%; padding: 8px"
-        />
+  <body class="d-flex align-items-center min-vh-100">
+    <div class="container py-4">
+      <div class="auth-card card shadow-sm">
+        <h2 class="text-center">Login</h2>
+        <form id="loginForm">
+          <div class="form-group floating">
+            <input
+              type="email"
+              id="email"
+              name="email"
+              required
+              class="form-control"
+              placeholder=" "
+            />
+            <label for="email">Email</label>
+          </div>
+          <div class="form-group floating">
+            <input
+              type="password"
+              id="password"
+              name="password"
+              required
+              class="form-control"
+              placeholder=" "
+            />
+            <label for="password">Password</label>
+          </div>
+          <button
+            type="submit"
+            class="btn btn-primary btn-block"
+            id="login"
+          >
+            Login
+          </button>
+          <div class="text-center mt-3">
+            <a href="register.html">Need an account? Register here</a>
+          </div>
+        </form>
       </div>
-      <div style="margin-bottom: 15px">
-        <label for="password">Password:</label><br />
-        <input
-          type="password"
-          id="password"
-          name="password"
-          required
-          style="width: 100%; padding: 8px"
-        />
-      </div>
-      <button
-        type="submit"
-        style="
-          width: 100%;
-          padding: 10px;
-          background: #007bff;
-          color: #fff;
-          border: none;
-          border-radius: 4px;
-        "
-        id="login"
-      >
-        Login
-      </button>
-      <div class="text-center mt-3">
-        <a href="register.html">Need an account? Register here</a>
-      </div>
-    </form>
+    </div>
   </body>
 </html>

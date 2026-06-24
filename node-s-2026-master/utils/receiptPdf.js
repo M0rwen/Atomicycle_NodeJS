@@ -36,7 +36,11 @@ const generateReceiptPdfBuffer = (transaction) => {
         }
         document.text(`Placed: ${new Date(transaction.date_placed).toLocaleString()}`);
         document.text(`Shipped: ${transaction.date_shipped ? new Date(transaction.date_shipped).toLocaleString() : 'Pending'}`);
+        document.text(`Payment Method: ${transaction.payment_method || 'cash'}`);
+        document.text(`Delivery Status: ${transaction.delivery_status || 'pending'}`);
         document.text(`Shipping: ${formatCurrency(shipping)}`);
+        document.text(`Delivery Address: ${transaction.delivery_address || 'N/A'}`);
+        document.text(`Delivery Phone: ${transaction.delivery_phone || 'N/A'}`);
         document.moveDown(1);
 
         document.fontSize(12).text('Order Details', { underline: true });

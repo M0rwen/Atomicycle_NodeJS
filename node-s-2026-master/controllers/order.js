@@ -28,6 +28,7 @@ const normalizeTransaction = (transaction) => {
     }, 0);
     const shipping = Number(plainTransaction.shipping || 0);
     const total = subtotal + shipping;
+    const totalItems = lines.reduce((sum, line) => sum + Number(line.quantity || 0), 0);
 
     return {
         ...plainTransaction,
@@ -37,6 +38,7 @@ const normalizeTransaction = (transaction) => {
         customer_email: plainTransaction.Customer?.User?.email || '',
         subtotal,
         total,
+        totalItems,
         lines,
     };
 };
@@ -49,10 +51,12 @@ const sendReceiptEmail = async (transactionRecord, title) => {
         return;
     }
 
+    // Send only the receipt PDF; do not include any authentication/token content here.
     await sendEmail({
         email,
         subject: title,
-        message: `Transaction ${transactionRecord.orderinfo_id} has been updated. The receipt is attached.`,
+        text: `Transaction ${transactionRecord.orderinfo_id} has been updated. The receipt is attached.`,
+        html: `<p>Transaction <strong>${transactionRecord.orderinfo_id}</strong> has been processed. Your receipt is attached as a PDF.</p>`,
         attachments: [
             {
                 filename: `receipt-order-${transactionRecord.orderinfo_id}.pdf`,
@@ -63,32 +67,63 @@ const sendReceiptEmail = async (transactionRecord, title) => {
 };
 
 const createOrder = async (req, res) => {
-    const { cart, user } = req.body;
+    const {
+        cart,
+        user,
+        deliveryName,
+        deliveryPhone,
+        deliveryAddress,
+        paymentMethod,
+        shipping,
+        orderNotes,
+    } = req.body;
 
     if (!Array.isArray(cart) || cart.length === 0) {
         return res.status(400).json({ error: 'Cart is empty' });
     }
 
+    if (!deliveryName || !deliveryPhone || !deliveryAddress || !paymentMethod) {
+        return res.status(400).json({ error: 'Delivery and payment details are required' });
+    }
+
     const transaction = await sequelize.transaction();
 
     try {
-        const customer = await Customer.findOne({
+        let customer = await Customer.findOne({
             where: { user_id: user.id },
             include: [{ model: User, attributes: ['id', 'name', 'email'] }],
             transaction,
         });
 
         if (!customer) {
-            await transaction.rollback();
-            return res.status(404).json({ error: 'Customer not found' });
+            const userRecord = await User.findByPk(user.id, { transaction });
+            const [fname, ...lnameParts] = (userRecord?.name || '').split(' ');
+
+            customer = await Customer.create(
+                {
+                    user_id: user.id,
+                    fname: fname || '',
+                    lname: lnameParts.join(' ') || '',
+                    addressline: '',
+                    zipcode: '',
+                    phone: '',
+                },
+                { transaction }
+            );
         }
 
         const orderInfo = await OrderInfo.create(
             {
-                customer_id: customer.customer_id,
+                customer_id: customer.id,
                 date_placed: new Date(),
-                date_shipped: new Date(),
-                shipping: 100,
+                date_shipped: null,
+                shipping: Number(shipping || 0),
+                payment_method: paymentMethod,
+                delivery_status: 'pending',
+                delivery_name: deliveryName,
+                delivery_address: deliveryAddress,
+                delivery_phone: deliveryPhone,
+                notes: orderNotes || null,
             },
             { transaction }
         );
@@ -117,7 +152,7 @@ const createOrder = async (req, res) => {
             success: true,
             order_id: orderInfo.orderinfo_id,
             dateOrdered: orderInfo.date_placed,
-            message: 'transaction complete',
+            message: 'Order placed successfully',
             cart,
         });
     } catch (error) {
@@ -173,7 +208,7 @@ const getSingleTransaction = async (req, res) => {
 
 const updateTransaction = async (req, res) => {
     const transactionId = req.params.id;
-    const { shipping, date_shipped, cart } = req.body;
+    const { shipping, date_shipped, delivery_status, cart } = req.body;
     const transaction = await sequelize.transaction();
 
     try {
@@ -188,6 +223,7 @@ const updateTransaction = async (req, res) => {
             {
                 ...(shipping !== undefined ? { shipping } : {}),
                 ...(date_shipped ? { date_shipped } : {}),
+                ...(delivery_status ? { delivery_status } : {}),
             },
             { transaction }
         );

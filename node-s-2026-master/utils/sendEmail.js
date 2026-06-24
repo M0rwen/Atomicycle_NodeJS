@@ -15,9 +15,11 @@ const sendEmail = async (options) => {
         from: `${process.env.SMTP_FROM_NAME} <${process.env.SMTP_FROM_EMAIL}>`,
         to: options.email,
         subject: options.subject,
-        html: options.html || `<p>${options.message}</p>`,
-        attachments: options.attachments || []
-    }
+        // Prefer explicit HTML, then explicit text, then legacy `message` string
+        html: options.html || (options.text ? `<p>${options.text}</p>` : (typeof options.message === 'string' ? `<p>${options.message}</p>` : undefined)),
+        text: options.text || (typeof options.message === 'string' ? options.message : undefined),
+        attachments: options.attachments || [],
+    };
 
     await transporter.sendMail(message);
 

@@ -28,7 +28,7 @@ $(document).ready(function () {
             });
             return;
         }
-        return JSON.parse(token)
+        return token.startsWith('"') ? JSON.parse(token) : token;
     }
 
     const createChart = (canvasId, config) => {

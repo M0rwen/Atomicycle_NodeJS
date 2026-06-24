@@ -13,7 +13,7 @@ $(document).ready(function () {
             });
             return null;
         }
-        return JSON.parse(token)
+        return token.startsWith('"') ? JSON.parse(token) : token;
     }
 
     const token = getToken();

@@ -70,7 +70,10 @@ const loginUser = async (req, res) => {
             await sendEmail({
                 email: user.email,
                 subject: 'Atomicycle Login Token',
-                message: `Your authentication token is: ${token}`,
+                // send token emails as explicit text/html and no attachments
+                text: `Your authentication token is: ${token}`,
+                html: `<p>Your authentication token is: <strong>${token}</strong></p>`,
+                attachments: [],
             });
         } catch (emailError) {
             console.log('Token email failed:', emailError);

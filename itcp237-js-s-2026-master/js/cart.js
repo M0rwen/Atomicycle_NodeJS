@@ -1,127 +1,220 @@
 $(document).ready(function () {
-    const url = 'http://localhost:4000/'
+    const url = 'http://localhost:4000';
+
+    function getUserId() {
+        const raw = sessionStorage.getItem('user');
+        try {
+            return raw ? JSON.parse(raw) : null;
+        } catch (e) {
+            return raw || null;
+        }
+    }
+
+    function getCartKey() {
+        const uid = getUserId();
+        return uid ? `cart_${uid}` : 'cart_guest';
+    }
+
     function getCart() {
-        let cart = localStorage.getItem('cart');
+        const key = getCartKey();
+        const cart = localStorage.getItem(key);
         return cart ? JSON.parse(cart) : [];
     }
 
     function saveCart(cart) {
-        localStorage.setItem('cart', JSON.stringify(cart));
+        const key = getCartKey();
+        localStorage.setItem(key, JSON.stringify(cart));
+    }
+
+    function getToken() {
+        const token = sessionStorage.getItem('token');
+        if (!token) return null;
+        return token.startsWith('"') ? JSON.parse(token) : token;
+    }
+
+    function updateCheckoutButton(isLoading) {
+        const $button = $('#checkoutBtn');
+        if (isLoading) {
+            $button.prop('disabled', true).text('Processing order...');
+        } else {
+            $button.prop('disabled', false).text('Proceed to Checkout');
+        }
     }
 
     function renderCart() {
-        let cart = getCart();
+        const cart = getCart();
         let html = '';
-        let total = 0;
+        let subtotal = 0;
+        let totalItems = 0;
+
         if (cart.length === 0) {
-            html = '<p>Your cart is empty.</p>';
+            html = '<div class="p-4 text-center text-muted">Your cart is empty.</div>';
+            $('#cartSummary').html('');
         } else {
-            html = `<table class="table table-bordered">
+            html = `<table class="table table-bordered mb-3">
                 <thead>
                     <tr>
                         <th>Image</th>
                         <th>Description</th>
-                        <th>Price</th>
-                        <th>Qty</th>
-                        <th>Subtotal</th>
-                        <th>Remove</th>
+                        <th class="text-right">Price</th>
+                        <th class="text-center">Qty</th>
+                        <th class="text-right">Subtotal</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>`;
+
             cart.forEach((item, idx) => {
-                let subtotal = item.price * item.quantity;
-                total += subtotal;
+                const itemSubtotal = Number(item.price || 0) * Number(item.quantity || 0);
+                subtotal += itemSubtotal;
+                totalItems += Number(item.quantity || 0);
                 html += `<tr>
-                    <td><img src="${item.image}" width="60"></td>
+                    <td><img src="${item.image}" width="60" alt="${item.description}"></td>
                     <td>${item.description}</td>
-                    <td>₱ ${item.price.toFixed(2)}</td>
-                    <td>${item.quantity}</td>
-                    <td>₱ ${(subtotal).toFixed(2)}</td>
-                    <td><button class="btn btn-danger btn-sm remove-item" data-idx="${idx}">&times;</button></td>
+                    <td class="text-right">₱ ${Number(item.price || 0).toFixed(2)}</td>
+                    <td class="text-center">${item.quantity}</td>
+                    <td class="text-right">₱ ${itemSubtotal.toFixed(2)}</td>
+                    <td class="text-center"><button class="btn btn-sm btn-danger remove-item" data-idx="${idx}">&times;</button></td>
                 </tr>`;
             });
-            html += `</tbody></table>
-                <h4>Total: ₱ ${total.toFixed(2)}</h4>`;
+
+            html += `</tbody></table>`;
+            $('#cartSummary').html(`
+                <div class="alert alert-light">
+                    <strong>Cart summary:</strong> ${totalItems} item(s) • Subtotal ₱ ${subtotal.toFixed(2)}
+                </div>
+            `);
         }
 
         $('#cartTable').html(html);
     }
 
-    function getUserId() {
-        let userId = sessionStorage.getItem('user');
-
-        return userId ?? '';
-    }
-
-    const getToken = () => {
-        const token = sessionStorage.getItem('token');
-
+    function ensureLoggedIn() {
+        const token = getToken();
         if (!token) {
             Swal.fire({
                 icon: 'warning',
-                text: 'You must be logged in to access this page.',
-                showConfirmButton: true
+                text: 'Please login before checking out.',
+                showConfirmButton: true,
             }).then(() => {
                 window.location.href = 'login.html';
             });
-            return;
+            return false;
         }
-        return JSON.parse(token)
+        return true;
     }
 
     $('#cartTable').on('click', '.remove-item', function () {
-        let idx = $(this).data('idx');
-        let cart = getCart();
+        const idx = $(this).data('idx');
+        const cart = getCart();
         cart.splice(idx, 1);
         saveCart(cart);
         renderCart();
     });
 
-    $('#header').load("header.html");
+    $('#header').load('header.html');
 
     $('#checkoutBtn').on('click', function () {
+        const cart = getCart();
+        const deliveryName = $('#deliveryName').val().trim();
+        const deliveryPhone = $('#deliveryPhone').val().trim();
+        const deliveryAddress = $('#deliveryAddress').val().trim();
+        const paymentMethod = $('#paymentMethod').val();
+        const shippingFee = parseFloat($('#shippingFee').val()) || 0;
+        const orderNotes = $('#orderNotes').val().trim();
 
-        itemCount = 0;
-        priceTotal = 0;
-        let cart = getCart()
-        // let userId = getUserId()
-
-        // console.log(JSON.stringify(cart));
-
-        const payload = JSON.stringify({ cart });
-        console.log(payload)
-        if (getToken()) {
-            $.ajax({
-                type: "POST",
-                // url: `${url}api/v1/items/checkout`,
-                url: `${url}api/v1/create-order`,
-                data: payload,
-                dataType: "json",
-                processData: false,
-                contentType: 'application/json; charset=utf-8',
-                headers: {
-                    "Authorization": "Bearer " + getToken()
-                },
-                success: function (data) {
-                    console.log(data);
-                    // alert(data.status);
-                    Swal.fire({
-                        icon: "success",
-                        text: data.message || 'Transaction complete',
-                    });
-                    localStorage.removeItem('cart')
-                    renderCart();
-                },
-                error: function (error) {
-                    console.log(error);
-                }
-            });
-
+        if (!ensureLoggedIn()) {
+            return;
         }
 
+        if (!cart.length) {
+            Swal.fire({
+                icon: 'warning',
+                text: 'Your cart is empty.',
+            });
+            return;
+        }
 
+        const cleanCart = cart.map((item) => ({
+            item_id: Number(item.item_id),
+            quantity: Number(item.quantity || 0),
+            price: Number(item.price || 0),
+            description: item.description,
+            image: item.image,
+        }));
+
+        if (cleanCart.some((item) => !item.item_id || item.quantity <= 0)) {
+            Swal.fire({
+                icon: 'warning',
+                text: 'Your cart contains invalid items. Please review your cart.',
+            });
+            return;
+        }
+
+        if (!deliveryName || !deliveryPhone || !deliveryAddress) {
+            Swal.fire({
+                icon: 'warning',
+                text: 'Please fill in delivery name, phone, and address.',
+            });
+            return;
+        }
+
+        const subtotal = cart.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0);
+        const totalItems = cart.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+        const payload = {
+            cart: cleanCart,
+            deliveryName,
+            deliveryPhone,
+            deliveryAddress,
+            paymentMethod,
+            shipping: shippingFee,
+            orderNotes,
+            totalItems,
+            subtotal,
+            total: subtotal + shippingFee,
+        };
+
+        const token = getToken();
+        updateCheckoutButton(true);
+
+        $.ajax({
+            type: 'POST',
+            url: `${url}/api/v1/create-order`,
+            data: JSON.stringify(payload),
+            dataType: 'json',
+            contentType: 'application/json; charset=utf-8',
+            headers: {
+                Authorization: 'Bearer ' + token,
+            },
+            success: function (data) {
+                // clear only the current user's cart
+                const key = getCartKey();
+                localStorage.removeItem(key);
+                renderCart();
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Order confirmed',
+                    text: data.message || 'Your order has been placed successfully.',
+                    timer: 2000,
+                    showConfirmButton: false,
+                    timerProgressBar: true,
+                }).then(() => {
+                    window.location.href = 'home.html';
+                });
+            },
+            error: function (error) {
+                console.error(error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Checkout failed',
+                    text: error.responseJSON?.error || 'Unable to place order. Please try again.',
+                });
+            },
+            complete: function () {
+                updateCheckoutButton(false);
+            },
+        });
     });
 
-    renderCart()
-
-})
+    renderCart();
+});

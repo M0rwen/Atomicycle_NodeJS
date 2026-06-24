@@ -1,9 +1,52 @@
 $(document).ready(function () {
-    const url = 'http://localhost:4000/'
-    function getUserId() {
-        let userId = sessionStorage.getItem('user');
+    const url = 'http://localhost:4000/';
 
-        return userId ?? '';
+    function getUserId() {
+        const userId = sessionStorage.getItem('user');
+        return userId ? JSON.parse(userId) : null;
+    }
+
+    function getUserEmail() {
+        return sessionStorage.getItem('email') || '';
+    }
+
+    function getUserName() {
+        return sessionStorage.getItem('userName') || '';
+    }
+
+    function showSummaryMode() {
+        $('#profileSummary').removeClass('d-none');
+        $('#profileForm').addClass('d-none');
+        $('#cancelEditBtn').addClass('d-none');
+        $('#editProfileBtn').removeClass('d-none');
+    }
+
+    function showEditMode() {
+        $('#profileSummary').addClass('d-none');
+        $('#profileForm').removeClass('d-none');
+        $('#cancelEditBtn').removeClass('d-none');
+        $('#editProfileBtn').addClass('d-none');
+    }
+
+    function updateProfileSummary() {
+        const title = $('#title').val().trim();
+        const fname = $('#firstName').val().trim();
+        const lname = $('#lastName').val().trim();
+        const address = $('#address').val().trim();
+        const town = $('#town').val().trim();
+        const zipcode = $('#zipcode').val().trim();
+        const phone = $('#phone').val().trim();
+        const displayName = [title, fname, lname].filter(Boolean).join(' ') || getUserName() || 'Guest Rider';
+        const email = getUserEmail() || 'No email set';
+        const addressText = address || town ? [address, town].filter(Boolean).join(', ') : 'No address added yet';
+        const previewSrc = $('#avatarPreview').attr('src') && $('#avatarPreview').attr('src') !== '#' ? $('#avatarPreview').attr('src') : 'https://via.placeholder.com/130?text=Avatar';
+
+        $('#summaryName').text(displayName);
+        $('#summaryEmail').text(email);
+        $('#summaryAddress').text(addressText);
+        $('#summaryPhone').text(phone || 'Not provided');
+        $('#summaryZip').text(zipcode || 'N/A');
+        $('#avatarPreview, #avatarPreviewForm').attr('src', previewSrc);
     }
 
     if ($('#registerForm').length && $.fn.validate) {
@@ -36,7 +79,7 @@ $(document).ready(function () {
                     minlength: 'Password must be at least 6 characters',
                 },
             },
-            submitHandler: function (form) {
+            submitHandler: function () {
                 const user = {
                     name: $('#name').val(),
                     email: $('#email').val(),
@@ -72,19 +115,6 @@ $(document).ready(function () {
             },
         });
     }
-
-    $('#avatar').on('change', function () {
-        const file = this.files[0];
-        console.log(this.files[0])
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                console.log(e.target.result)
-                $('#avatarPreview').attr('src', e.target.result);
-            };
-            reader.readAsDataURL(file);
-        }
-    });
 
     if ($('#loginForm').length && $.fn.validate) {
         $('#loginForm').validate({
@@ -129,9 +159,11 @@ $(document).ready(function () {
                             timer: 1000,
                             timerProgressBar: true,
                         });
-                        sessionStorage.setItem('token', JSON.stringify(data.token));
+                        sessionStorage.setItem('token', data.token);
                         sessionStorage.setItem('user', JSON.stringify(data.user.id));
                         sessionStorage.setItem('role', JSON.stringify(data.user.role || 'user'));
+                        sessionStorage.setItem('userName', data.user.name || '');
+                        sessionStorage.setItem('email', data.user.email || '');
                         if ((data.user.role || 'user') === 'admin') {
                             window.location.href = 'users.html';
                             return;
@@ -155,87 +187,121 @@ $(document).ready(function () {
         });
     }
 
-    $("#updateBtn").on('click', function (event) {
-        event.preventDefault();
-        // userId = sessionStorage.getItem('userId') ?? sessionStorage.getItem('userId')
-        userId = getUserId()
-        console.log(userId)
-        var data = $('#profileForm')[0];
+    $('#avatar').on('change', function () {
+        const file = this.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                $('#avatarPreview').attr('src', e.target.result);
+                $('#avatarPreviewForm').attr('src', e.target.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    });
 
-        let formData = new FormData(data);
-        formData.append('userId', userId)
+    $('#editProfileBtn').on('click', function () {
+        showEditMode();
+    });
+
+    $('#cancelEditBtn').on('click', function () {
+        showSummaryMode();
+    });
+
+    $('#profileForm').on('submit', function (event) {
+        event.preventDefault();
+
+        const userId = getUserId();
+        if (!userId) {
+            Swal.fire({
+                icon: 'warning',
+                text: 'You must be logged in to update your profile.',
+            });
+            return;
+        }
+
+        const form = $('#profileForm')[0];
+        const formData = new FormData(form);
+        formData.append('userId', userId);
+
+        $('#updateBtn').prop('disabled', true).text('Saving...');
 
         $.ajax({
-            method: "POST",
+            method: 'POST',
             url: `${url}api/v1/update-profile`,
             data: formData,
             contentType: false,
             processData: false,
-            dataType: "json",
-            success: function (data) {
-                console.log(data);
+            dataType: 'json',
+            success: function (response) {
                 Swal.fire({
-                    icon: "success",
-                    text: "Profile updated successfully",
+                    icon: 'success',
+                    text: 'Profile updated successfully',
                     showConfirmButton: false,
                     position: 'bottom-right',
                     timer: 1500,
-                    timerProgressBar: true
+                    timerProgressBar: true,
                 });
+                updateProfileSummary();
+                showSummaryMode();
             },
             error: function (error) {
-                console.log(error);
-            }
+                console.error(error);
+                Swal.fire({
+                    icon: 'error',
+                    text: error.responseJSON?.message || 'Unable to update profile.',
+                    position: 'bottom-right',
+                });
+            },
+            complete: function () {
+                $('#updateBtn').prop('disabled', false).text('Save Changes');
+            },
         });
     });
 
-    $("#deactivateBtn").on('click', function (e) {
+    $('#deactivateBtn').on('click', function (e) {
         e.preventDefault();
-        let email = $("#email").val()
-        let user = {
-            email,
-        }
+        const email = $('#email').val();
+        const user = { email };
+
         $.ajax({
-            method: "DELETE",
+            method: 'DELETE',
             url: `${url}api/v1/deactivate`,
             data: JSON.stringify(user),
             processData: false,
             contentType: 'application/json; charset=utf-8',
-            dataType: "json",
+            dataType: 'json',
             success: function (data) {
-                console.log(data);
                 Swal.fire({
                     text: data.message,
                     showConfirmButton: false,
                     position: 'bottom-right',
                     timer: 2000,
-                    timerProgressBar: true
+                    timerProgressBar: true,
                 });
-                sessionStorage.removeItem('user')
-                sessionStorage.removeItem('token')
-                sessionStorage.removeItem('role')
-                window.location.href = 'home.html'
+                sessionStorage.removeItem('user');
+                sessionStorage.removeItem('token');
+                sessionStorage.removeItem('role');
+                sessionStorage.removeItem('userName');
+                sessionStorage.removeItem('email');
+                window.location.href = 'home.html';
             },
             error: function (error) {
-                console.log(error);
-            }
+                console.error(error);
+            },
         });
     });
 
-    $("#profile").load("header.html", function () {
-        // After header is loaded, check sessionStorage for userId
+    $('#profile').load('header.html', function () {
         if (sessionStorage.getItem('user')) {
-            // Change Login link to Logout
             const $loginLink = $('a.nav-link[href="login.html"]');
-            $loginLink.text('Logout').attr({ 'href': '#', 'id': 'logout-link' }).on('click', function (e) {
+            $loginLink.text('Logout').attr({ href: '#', id: 'logout-link' }).on('click', function (e) {
                 e.preventDefault();
                 Swal.fire({
-                    text: 'logout',
+                    text: 'Logged out',
                     showConfirmButton: false,
                     position: 'bottom-right',
                     timer: 1000,
-                    timerProgressBar: true
-
+                    timerProgressBar: true,
                 });
                 sessionStorage.clear();
                 window.location.href = 'login.html';
@@ -243,20 +309,25 @@ $(document).ready(function () {
         }
     });
 
-    $("#logout").on('click', function (e) {
+    $(document).on('click', '#logout', function (e) {
         e.preventDefault();
         Swal.fire({
-            text: 'logout',
+            text: 'Logged out',
             showConfirmButton: false,
             position: 'bottom-right',
             timer: 1000,
-            timerProgressBar: true
-
+            timerProgressBar: true,
         });
-        sessionStorage.removeItem('token')
-        sessionStorage.removeItem('user')
-        sessionStorage.removeItem('role')
-        window.location.href = 'login.html'
-
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('user');
+        sessionStorage.removeItem('role');
+        sessionStorage.removeItem('userName');
+        sessionStorage.removeItem('email');
+        window.location.href = 'login.html';
     });
-})
+
+    if ($('#profileSummary').length) {
+        updateProfileSummary();
+        showSummaryMode();
+    }
+});

@@ -12,14 +12,29 @@ $(document).ready(function () {
   let mode = 'pagination';
   let loadingMore = false;
 
+  const getUserId = () => {
+    const raw = sessionStorage.getItem('user');
+    try {
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      return raw || null;
+    }
+  }
+
+  const getCartKey = () => {
+    const uid = getUserId();
+    return uid ? `cart_${uid}` : 'cart_guest';
+  }
+
   const getCart = () => {
-    let cart = localStorage.getItem('cart');
+    const key = getCartKey();
+    const cart = localStorage.getItem(key);
     return cart ? JSON.parse(cart) : [];
   }
 
   const updateCartCount = () => {
     const cart = getCart();
-    itemCount = cart.reduce((total, item) => total + item.quantity, 0);
+    itemCount = cart.reduce((total, item) => total + (Number(item.quantity) || 0), 0);
     if (itemCount > 0) {
       $('#itemCount').text(itemCount).css('display', 'inline-block');
     } else {
@@ -31,7 +46,8 @@ $(document).ready(function () {
   updateCartCount();
 
   const saveCart = cart => {
-    localStorage.setItem('cart', JSON.stringify(cart));
+    const key = getCartKey();
+    localStorage.setItem(key, JSON.stringify(cart));
   }
 
   const normalizeImagePath = (value) => {
@@ -342,14 +358,14 @@ $(document).ready(function () {
   $(document).on('click', '#detailsAddToCart', function () {
 
     const qty = parseInt($("#detailsQty").val());
-    const id = $("#detailsItemId").val();
+    const id = Number($("#detailsItemId").val());
     const description = $("#productDetailsModalLabel").text();
     const price = $("#productDetailsModalBody strong").text().replace(/[^\d.]/g, '');
     const image = $("#productDetailsModalBody img").attr('src');
     const stock = parseInt($("#productDetailsModalBody p:contains('Stock')").text().replace(/[^\d]/g, ''));
     let cart = getCart();
 
-    let existing = cart.find(item => item.item_id == id);
+    let existing = cart.find(item => item.item_id === id);
     if (existing) {
       existing.quantity += qty;
     } else {
@@ -364,8 +380,8 @@ $(document).ready(function () {
     }
     saveCart(cart);
     updateCartCount();
-    $('#productDetailsModal').modal('hide')
-    console.log(cart)
+    $('#productDetailsModal').modal('hide');
+    console.log(cart);
 
   });
 

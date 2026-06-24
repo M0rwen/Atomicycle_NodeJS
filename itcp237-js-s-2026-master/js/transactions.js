@@ -17,7 +17,7 @@ $(document).ready(function () {
             return null;
         }
 
-        return JSON.parse(token);
+        return token.startsWith('"') ? JSON.parse(token) : token;
     };
 
     const formatDate = (value) => {
@@ -50,6 +50,22 @@ $(document).ready(function () {
         ajax: {
             url: `${url}/api/v1/transactions`,
             dataSrc: 'rows',
+            beforeSend: function (jqXHR, settings) {
+                const token = getToken();
+                if (!token) {
+                    // getToken will redirect to login if missing
+                    return false;
+                }
+                jqXHR.setRequestHeader('Authorization', `Bearer ${token}`);
+            },
+            error: function (xhr, status, error) {
+                console.error('Transaction load failed:', status, error, xhr.responseText);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Unable to load transactions',
+                    text: xhr.responseJSON?.message || xhr.responseText || 'Please refresh and try again.',
+                });
+            }
         },
         columns: [
             { data: 'orderinfo_id' },
@@ -85,6 +101,9 @@ $(document).ready(function () {
                     return `PHP ${Number(data || 0).toFixed(2)}`;
                 },
             },
+            { data: 'totalItems' },
+            { data: 'delivery_status' },
+            { data: 'payment_method' },
             {
                 data: 'lines',
                 render: function (data) {
@@ -110,22 +129,24 @@ $(document).ready(function () {
         $('#transactionId').val(rowData.orderinfo_id);
         $('#shipping').val(Number(rowData.shipping || 0));
         $('#dateShipped').val(formatDateTimeLocal(rowData.date_shipped));
+        $('#deliveryStatus').val(rowData.delivery_status || 'pending');
         $('#transactionModal').modal('show');
     });
 
     $('#transactionUpdate').on('click', function () {
         const id = $('#transactionId').val();
         const payload = {
-            shipping: $('#shipping').val(),
+            shipping: Number($('#shipping').val()) || 0,
             date_shipped: $('#dateShipped').val() || null,
+            delivery_status: $('#deliveryStatus').val(),
         };
 
         $.ajax({
-            method: 'PATCH',
+            type: 'PATCH',
             url: `${url}/api/v1/transactions/${id}`,
             data: JSON.stringify(payload),
-            contentType: 'application/json; charset=utf-8',
             dataType: 'json',
+            contentType: 'application/json; charset=utf-8',
             headers: {
                 Authorization: `Bearer ${getToken()}`,
             },

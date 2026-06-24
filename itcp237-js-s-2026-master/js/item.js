@@ -1,7 +1,8 @@
 $(document).ready(function () {
     $("#home").load("header.html")
     const url = 'http://localhost:4000'
-    const token = sessionStorage.getItem('token') ? JSON.parse(sessionStorage.getItem('token')) : null
+    const _rawToken = sessionStorage.getItem('token');
+    const token = _rawToken ? (_rawToken.startsWith('"') ? JSON.parse(_rawToken) : _rawToken) : null
     const role = sessionStorage.getItem('role') ? JSON.parse(sessionStorage.getItem('role')) : 'user'
     const isAdmin = role === 'admin'
     const resolveImagePath = (value) => {
@@ -39,7 +40,7 @@ $(document).ready(function () {
             });
             return;
         }
-        return JSON.parse(token)
+        return token.startsWith('"') ? JSON.parse(token) : token;
     }
 
     $('#itable').DataTable({

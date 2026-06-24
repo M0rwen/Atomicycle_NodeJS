@@ -1,48 +1,29 @@
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
-  <a class="navbar-brand" href="home.html">Atomicycle</a>
-  <button
-    class="navbar-toggler"
-    type="button"
-    data-toggle="collapse"
-    data-target="#navbarNav"
-    aria-controls="navbarNav"
-    aria-expanded="false"
-    aria-label="Toggle navigation"
-  >
-    <span class="navbar-toggler-icon"></span>
-  </button>
-  <div class="collapse navbar-collapse" id="navbarNav">
-    <ul class="navbar-nav ml-auto">
-      <li class="nav-item active">
-        <a class="nav-link" href="home.html">Home</a>
-      </li>
-      <li class="nav-item" id="itemsMenu">
-        <a class="nav-link" href="item.html">Items</a>
-      </li>
-      <li class="nav-item d-none" id="usersMenu">
-        <a class="nav-link" href="users.html">Users</a>
-      </li>
-      <li class="nav-item d-none" id="transactionsMenu">
-        <a class="nav-link" href="transactions.html">Transactions</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" href="profile.html">Profile</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" href="cart.html">
-          🛒 Cart
-          <span id="itemCount" style="display: none; background-color: red; color: white; border-radius: 50%; padding: 2px 6px; font-size: 12px; margin-left: 5px;">0</span>
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" href="register.html">Register</a>
-      </li>
-      <li class="nav-item" id="log">
-        <a class="nav-link" href="login.html">Login</a>
-      </li>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+
+<nav class="app-navbar mb-4">
+  <div class="nav-inner container d-flex align-items-center justify-content-between">
+    <a class="brand" href="home.html">Atomicycle</a>
+    <button class="nav-toggle d-lg-none" aria-label="Toggle navigation">☰</button>
+    <ul class="nav-items d-none d-lg-flex align-items-center">
+      <li><a class="nav-link" href="home.html">Home</a></li>
+      <li id="itemsMenu"><a class="nav-link" href="item.html">Items</a></li>
+      <li id="usersMenu" class="d-none"><a class="nav-link" href="users.html">Users</a></li>
+      <li id="transactionsMenu" class="d-none"><a class="nav-link" href="transactions.html">Transactions</a></li>
+      <li><a class="nav-link" href="profile.html">Profile</a></li>
+      <li><a class="nav-link cart-link" href="cart.html">🛒 Cart <span id="itemCount" class="cart-badge">0</span></a></li>
+      <li><a class="nav-link" href="register.html">Register</a></li>
+      <li id="log"><a class="nav-link" href="login.html">Login</a></li>
     </ul>
   </div>
 </nav>
+
+<style>
+  /* ensure our fonts apply immediately after header loads */
+  body { font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; }
+  h1,h2,h3,h4,h5,h6 { font-family: 'Orbitron', sans-serif; }
+</style>
 
 <script>
   (function () {
@@ -62,6 +43,30 @@
       });
     }
 
+    // Update cart item count per-user (cart_<userId> or cart_guest)
+    try {
+      const rawUser = sessionStorage.getItem('user');
+      let uid = null;
+      if (rawUser) {
+        try { uid = JSON.parse(rawUser); } catch (e) { uid = rawUser; }
+      }
+      const cartKey = uid ? `cart_${uid}` : 'cart_guest';
+      const cartRaw = localStorage.getItem(cartKey);
+      const cart = cartRaw ? JSON.parse(cartRaw) : [];
+      const count = cart.reduce((s, it) => s + (Number(it.quantity) || 0), 0);
+      const $count = document.getElementById('itemCount');
+      if ($count) {
+        if (count > 0) {
+          $count.style.display = 'inline-block';
+          $count.textContent = String(count);
+        } else {
+          $count.style.display = 'none';
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+
     if (role === 'admin' && usersMenu) {
       usersMenu.classList.remove('d-none');
     }
@@ -69,5 +74,14 @@
     if (role === 'admin' && transactionsMenu) {
       transactionsMenu.classList.remove('d-none');
     }
+
+      // mobile toggle
+      const toggle = document.querySelector('.nav-toggle');
+      const items = document.querySelector('.nav-items');
+      if (toggle && items) {
+        toggle.addEventListener('click', () => {
+          items.classList.toggle('d-none');
+        });
+      }
   })();
 </script>

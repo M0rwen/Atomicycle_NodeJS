@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.16.1/sweetalert2.css"
         integrity="sha512-fjO3Vy3QodX9c6G9AUmr6WuIaEPdGRxBjD7gjatG5gGylzYyrEq3U0q+smkG6CwIY0L8XALRFHh4KPHig0Q1ug=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="css/style.css" />
     <script src="https://code.jquery.com/jquery-3.6.4.min.js"
         integrity="sha256-oP6HI9z1XaZNBrJURtCoUT5SUnxFr8s3BzRl+cbzUq8=" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js"
@@ -26,19 +27,79 @@
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
     <script src="js/cart.js"></script>
-</head>
-
-<title>cart</title>
-
+    <title>Cart</title>
 </head>
 
 <body>
     <div id="header"></div>
-    <div class="container">
-    <h1>Your Cart</h1>
-    <div id="cartTable"></div>
-    <a href="home.html" class="btn btn-secondary mt-3">Continue Shopping</a>
-    <button id="checkoutBtn" class="btn btn-primary mt-3">Checkout</button>
-</div>
+    <div class="container my-5">
+      <div class="row mb-4">
+        <div class="col-md-8">
+          <h1 class="h3 mb-1">Your Cart</h1>
+          <p class="text-muted">Review your items and complete checkout securely.</p>
+        </div>
+        <div class="col-md-4 text-md-right align-self-center">
+          <a href="home.html" class="btn btn-outline-primary btn-sm">Continue Shopping</a>
+        </div>
+      </div>
+
+      <div class="row gx-4 gy-4">
+        <div class="col-lg-7">
+          <div class="card shadow-sm border-0">
+            <div class="card-body">
+              <div id="cartTable"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-5">
+          <div class="card shadow-sm border-0">
+            <div class="card-body">
+              <h3 class="h5">Delivery & Payment</h3>
+              <p class="text-muted small mb-4">Fill in the delivery details, choose payment, and place your order.</p>
+
+              <div class="form-row">
+                <div class="form-group col-12 col-md-6 floating">
+                  <input type="text" id="deliveryName" class="form-control" placeholder=" " required>
+                  <label for="deliveryName">Name</label>
+                </div>
+                <div class="form-group col-12 col-md-6 floating">
+                  <input type="text" id="deliveryPhone" class="form-control" placeholder=" " required>
+                  <label for="deliveryPhone">Phone</label>
+                </div>
+              </div>
+
+              <div class="form-group floating">
+                <input type="text" id="deliveryAddress" class="form-control" placeholder=" " required>
+                <label for="deliveryAddress">Delivery Address</label>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group col-12 col-md-6 floating">
+                  <select id="paymentMethod" class="form-control">
+                    <option value="cash">Cash</option>
+                    <option value="card">Card</option>
+                    <option value="paypal">PayPal</option>
+                  </select>
+                  <label for="paymentMethod">Payment Method</label>
+                </div>
+                <div class="form-group col-12 col-md-6 floating">
+                  <input type="number" id="shippingFee" class="form-control" value="100" min="0" step="0.01" placeholder=" ">
+                  <label for="shippingFee">Shipping Fee</label>
+                </div>
+              </div>
+
+              <div class="form-group floating">
+                <input type="text" id="orderNotes" class="form-control" placeholder=" ">
+                <label for="orderNotes">Order Notes</label>
+              </div>
+
+              <div id="cartSummary" class="alert alert-light border rounded mt-3"></div>
+              <button id="checkoutBtn" class="btn btn-primary btn-block mt-3">Proceed to Checkout</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 </body>
 </html>
