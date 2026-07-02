@@ -1,4 +1,4 @@
-const { sequelize, User, Customer, Item, OrderInfo, OrderLine } = require('../models');
+const { sequelize, User, Customer, Item, OrderInfo, OrderLine, Stock } = require('../models');
 const sendEmail = require('../utils/sendEmail');
 const { generateReceiptPdfBuffer } = require('../utils/receiptPdf');
 
@@ -44,25 +44,48 @@ const normalizeTransaction = (transaction) => {
 };
 
 const sendReceiptEmail = async (transactionRecord, title) => {
-    const pdfBuffer = await generateReceiptPdfBuffer(transactionRecord);
     const email = transactionRecord.Customer?.User?.email;
 
+    console.log('[receiptEmail] preparing receipt email', {
+        orderId: transactionRecord.orderinfo_id,
+        email,
+    });
+
+    const pdfBuffer = await generateReceiptPdfBuffer(transactionRecord);
+    const safePdfBuffer = Buffer.isBuffer(pdfBuffer) ? pdfBuffer : Buffer.from(pdfBuffer || '');
+
+    console.log('[receiptEmail] pdfBuffer', {
+        isBuffer: Buffer.isBuffer(pdfBuffer),
+        safeBufferLength: safePdfBuffer.length,
+        preview: safePdfBuffer.subarray(0, 40).toString('utf8'),
+    });
+
     if (!email) {
+        console.log('[receiptEmail] no email address found for transaction receipt');
         return;
     }
 
-    // Send only the receipt PDF; do not include any authentication/token content here.
+    const attachments = safePdfBuffer.length > 0
+        ? [
+            {
+                filename: `receipt-order-${transactionRecord.orderinfo_id}.pdf`,
+                content: safePdfBuffer,
+                contentType: 'application/pdf',
+            },
+        ]
+        : [];
+
+    console.log('[receiptEmail] sending email with attachments', {
+        attachmentCount: attachments.length,
+        orderId: transactionRecord.orderinfo_id,
+    });
+
     await sendEmail({
         email,
         subject: title,
         text: `Transaction ${transactionRecord.orderinfo_id} has been updated. The receipt is attached.`,
         html: `<p>Transaction <strong>${transactionRecord.orderinfo_id}</strong> has been processed. Your receipt is attached as a PDF.</p>`,
-        attachments: [
-            {
-                filename: `receipt-order-${transactionRecord.orderinfo_id}.pdf`,
-                content: pdfBuffer,
-            },
-        ],
+        attachments,
     });
 };
 
@@ -112,9 +135,12 @@ const createOrder = async (req, res) => {
             );
         }
 
+        const customerPrimaryKey = Customer.primaryKeyAttribute || 'id';
+        const customerId = customer?.[customerPrimaryKey] ?? customer?.id;
+
         const orderInfo = await OrderInfo.create(
             {
-                customer_id: customer.id,
+                customer_id: customerId,
                 date_placed: new Date(),
                 date_shipped: null,
                 shipping: Number(shipping || 0),
@@ -137,6 +163,23 @@ const createOrder = async (req, res) => {
                 },
                 { transaction }
             );
+
+            const stockRecord = await Stock.findOne({
+                where: { item_id: item.item_id },
+                transaction,
+            });
+
+            if (stockRecord) {
+                const orderedQuantity = Number(item.quantity || 0);
+                const currentQuantity = Number(stockRecord.quantity || 0);
+
+                await stockRecord.update(
+                    {
+                        quantity: Math.max(0, currentQuantity - orderedQuantity),
+                    },
+                    { transaction }
+                );
+            }
         }
 
         await transaction.commit();

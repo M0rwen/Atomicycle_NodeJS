@@ -7,14 +7,27 @@
     <a class="brand" href="home.html">Atomicycle</a>
     <button class="nav-toggle d-lg-none" aria-label="Toggle navigation">☰</button>
     <ul class="nav-items d-none d-lg-flex align-items-center">
-      <li><a class="nav-link" href="home.html">Home</a></li>
-      <li id="itemsMenu"><a class="nav-link" href="item.html">Items</a></li>
+      <li id="homeNav"><a class="nav-link" href="home.html">Home</a></li>
+      <li id="itemsMenu" class="d-none"><a class="nav-link" href="item.html">Items</a></li>
       <li id="usersMenu" class="d-none"><a class="nav-link" href="users.html">Users</a></li>
       <li id="transactionsMenu" class="d-none"><a class="nav-link" href="transactions.html">Transactions</a></li>
-      <li><a class="nav-link" href="profile.html">Profile</a></li>
-      <li><a class="nav-link cart-link" href="cart.html">🛒 Cart <span id="itemCount" class="cart-badge">0</span></a></li>
-      <li><a class="nav-link" href="register.html">Register</a></li>
-      <li id="log"><a class="nav-link" href="login.html">Login</a></li>
+      <li id="browseMenu" class="d-none"><a class="nav-link" href="home.html#featuredItems">Browse</a></li>
+      <li id="cartIconMenu" class="d-none">
+        <a class="nav-link cart-link" href="cart.html" aria-label="Shopping cart">🛒 <span id="itemCount" class="cart-badge">0</span></a>
+      </li>
+      <li class="nav-account-item">
+        <div class="account-dropdown">
+          <button class="account-toggle" type="button" aria-expanded="false" aria-label="Account menu">
+            👤
+          </button>
+          <div class="account-menu">
+            <a class="account-menu-link" href="login.html" id="accountLoginLink">Login</a>
+            <a class="account-menu-link" href="register.html" id="accountRegisterLink">Register</a>
+            <a class="account-menu-link d-none" href="profile.html" id="accountProfileLink">Profile</a>
+            <a class="account-menu-link d-none" href="#" id="accountLogoutLink">Logout</a>
+          </div>
+        </div>
+      </li>
     </ul>
   </div>
 </nav>
@@ -27,28 +40,118 @@
 
 <script>
   (function () {
-    const token = sessionStorage.getItem('token');
-    const role = sessionStorage.getItem('role') ? JSON.parse(sessionStorage.getItem('role')) : 'user';
-    const loginLink = document.querySelector('a.nav-link[href="login.html"]');
+    const storedUserData = sessionStorage.getItem('user');
+    let user = null;
+    try {
+      user = storedUserData ? JSON.parse(storedUserData) : null;
+    } catch (e) {
+      user = null;
+    }
+    const role = user?.role;
+
+    const homeNav = document.getElementById('homeNav');
+    const itemsMenu = document.getElementById('itemsMenu');
     const usersMenu = document.getElementById('usersMenu');
     const transactionsMenu = document.getElementById('transactionsMenu');
+    const browseMenu = document.getElementById('browseMenu');
+    const cartIconMenu = document.getElementById('cartIconMenu');
+    const accountToggle = document.querySelector('.account-toggle');
+    const accountMenu = document.querySelector('.account-menu');
+    const loginLink = document.getElementById('accountLoginLink');
+    const registerLink = document.getElementById('accountRegisterLink');
+    const profileLink = document.getElementById('accountProfileLink');
+    const logoutLink = document.getElementById('accountLogoutLink');
 
-    if (token && loginLink) {
-      loginLink.textContent = 'Logout';
-      loginLink.setAttribute('href', '#');
-      loginLink.addEventListener('click', function (event) {
-        event.preventDefault();
-        sessionStorage.clear();
-        window.location.href = 'login.html';
+    const updateAuthState = () => {
+      const isLoggedIn = Boolean(sessionStorage.getItem('token'));
+
+      if (isLoggedIn) {
+        if (loginLink) loginLink.classList.add('d-none');
+        if (registerLink) registerLink.classList.add('d-none');
+        if (profileLink) profileLink.classList.remove('d-none');
+        if (logoutLink) logoutLink.classList.remove('d-none');
+      } else {
+        if (loginLink) loginLink.classList.remove('d-none');
+        if (registerLink) registerLink.classList.remove('d-none');
+        if (profileLink) profileLink.classList.add('d-none');
+        if (logoutLink) logoutLink.classList.add('d-none');
+      }
+    };
+
+    updateAuthState();
+
+    if (accountToggle && accountMenu) {
+      accountToggle.addEventListener('click', function (event) {
+        event.stopPropagation();
+        const isOpen = accountMenu.classList.toggle('show');
+        accountToggle.setAttribute('aria-expanded', String(isOpen));
       });
     }
+
+    document.addEventListener('click', function () {
+      if (accountMenu) {
+        accountMenu.classList.remove('show');
+      }
+      if (accountToggle) {
+        accountToggle.setAttribute('aria-expanded', 'false');
+      }
+    });
+
+    if (logoutLink) {
+      logoutLink.addEventListener('click', function (event) {
+        event.preventDefault();
+        sessionStorage.clear();
+        updateAuthState();
+        updateNavVisibility();
+        window.location.href = 'home.html';
+      });
+    }
+
+    const updateNavVisibility = () => {
+      const currentToken = sessionStorage.getItem('token');
+      const currentUser = sessionStorage.getItem('user');
+      const parsedUser = currentUser ? JSON.parse(currentUser) : null;
+      const currentRole = parsedUser?.role;
+      const isLoggedIn = Boolean(currentToken);
+
+      if (homeNav) {
+        homeNav.classList.remove('d-none');
+      }
+
+      if (itemsMenu) {
+        itemsMenu.classList.toggle('d-none', !(currentRole === 'admin' && isLoggedIn));
+      }
+
+      if (usersMenu) {
+        usersMenu.classList.toggle('d-none', !(currentRole === 'admin' && isLoggedIn));
+      }
+
+      if (transactionsMenu) {
+        transactionsMenu.classList.toggle('d-none', !(currentRole === 'admin' && isLoggedIn));
+      }
+
+      if (browseMenu) {
+        browseMenu.classList.toggle('d-none', !(currentRole === 'user' && isLoggedIn));
+      }
+
+      if (cartIconMenu) {
+        cartIconMenu.classList.toggle('d-none', !(currentRole === 'user' && isLoggedIn));
+      }
+    };
+
+    updateNavVisibility();
 
     // Update cart item count per-user (cart_<userId> or cart_guest)
     try {
       const rawUser = sessionStorage.getItem('user');
       let uid = null;
       if (rawUser) {
-        try { uid = JSON.parse(rawUser); } catch (e) { uid = rawUser; }
+        try {
+          const parsedUser = JSON.parse(rawUser);
+          uid = parsedUser?.id ?? parsedUser;
+        } catch (e) {
+          uid = rawUser;
+        }
       }
       const cartKey = uid ? `cart_${uid}` : 'cart_guest';
       const cartRaw = localStorage.getItem(cartKey);
@@ -65,14 +168,6 @@
       }
     } catch (e) {
       // ignore
-    }
-
-    if (role === 'admin' && usersMenu) {
-      usersMenu.classList.remove('d-none');
-    }
-
-    if (role === 'admin' && transactionsMenu) {
-      transactionsMenu.classList.remove('d-none');
     }
 
       // mobile toggle

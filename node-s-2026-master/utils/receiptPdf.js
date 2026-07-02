@@ -10,9 +10,16 @@ const generateReceiptPdfBuffer = (transaction) => {
         const document = new PDFDocument({ margin: 40, size: 'A4' });
         const chunks = [];
 
-        document.on('data', (chunk) => chunks.push(chunk));
+        document.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
         document.on('error', reject);
-        document.on('end', () => resolve(Buffer.concat(chunks)));
+        document.on('end', () => {
+            const pdfBuffer = Buffer.concat(chunks);
+            console.log('[receiptPdf] generated buffer', {
+                isBuffer: Buffer.isBuffer(pdfBuffer),
+                length: pdfBuffer.length,
+            });
+            resolve(pdfBuffer);
+        });
 
         const orderId = transaction.orderinfo_id;
         const customerName = transaction.Customer

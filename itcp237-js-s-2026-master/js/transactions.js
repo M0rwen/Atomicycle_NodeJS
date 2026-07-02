@@ -40,10 +40,10 @@ $(document).ready(function () {
 
     const formatLineItems = (lines) => {
         if (!Array.isArray(lines) || lines.length === 0) {
-            return 'No items';
+            return '<span class="transaction-items-content">No items</span>';
         }
 
-        return lines.map((line) => `${line.Item?.description || `Item ${line.item_id}`} x ${line.quantity}`).join('<br>');
+        return lines.map((line) => `<span class="transaction-items-content">${line.Item?.description || `Item ${line.item_id}`} x ${line.quantity}</span>`).join('');
     };
 
     const table = $('#transactionsTable').DataTable({
@@ -67,6 +67,16 @@ $(document).ready(function () {
                 });
             }
         },
+        scrollX: true,
+        autoWidth: false,
+        order: [[0, 'desc']],
+        columnDefs: [
+            { targets: [0], width: '70px' },
+            { targets: [1, 2, 3, 4, 10], width: '140px' },
+            { targets: [5, 6, 7, 8, 9], width: '100px' },
+            { targets: [11], width: '300px', className: 'items-column' },
+            { targets: [12], width: '150px', orderable: false },
+        ],
         columns: [
             { data: 'orderinfo_id' },
             { data: 'customer_name' },
@@ -112,7 +122,6 @@ $(document).ready(function () {
             },
             {
                 data: null,
-                orderable: false,
                 render: function (data) {
                     return `
                         <button class="btn btn-sm btn-primary edit-transaction" data-id="${data.orderinfo_id}">Edit</button>

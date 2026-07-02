@@ -7,10 +7,9 @@ $(document).ready(function () {
   let searchTimer = null;
   let allItems = [];
   let filteredItems = [];
-  let currentPage = 1;
   let infinitePage = 1;
-  let mode = 'pagination';
   let loadingMore = false;
+  let activeCategory = 'all';
 
   const getUserId = () => {
     const raw = sessionStorage.getItem('user');
@@ -73,15 +72,31 @@ $(document).ready(function () {
     return '';
   }
 
-  const getFilteredItems = () => {
-    const term = $('#homeSearch').val().trim().toLowerCase();
-    if (!term) {
-      return allItems.slice();
+  const matchesCategory = (item, category) => {
+    const description = (item.description || '').toLowerCase();
+
+    if (category === 'fullface') {
+      return description.includes('full face');
     }
 
+    if (category === 'halfface') {
+      return description.includes('half face');
+    }
+
+    if (category === 'ridinggear') {
+      return !description.includes('full face') && !description.includes('half face') && !description.includes('helmet');
+    }
+
+    return true;
+  };
+
+  const getFilteredItems = () => {
+    const term = $('#homeSearch').val().trim().toLowerCase();
     return allItems.filter((item) => {
       const description = (item.description || '').toLowerCase();
-      return description.includes(term);
+      const matchesSearch = !term || description.includes(term);
+      const matchesActiveCategory = matchesCategory(item, activeCategory);
+      return matchesSearch && matchesActiveCategory;
     });
   }
 
@@ -93,6 +108,57 @@ $(document).ready(function () {
                                     data-price="${value.sell_price}"
                                     data-image="${imagePath}"
                                     data-stock="${value.quantity ?? 0}">Details</a></div></div></div>`;
+  }
+
+  const buildFeaturedItemCard = (value) => {
+    const imagePath = normalizeImagePath(value.img_path);
+    return `
+      <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card featured-item-card h-100">
+          <img src="${url}/${imagePath}" class="card-img-top" alt="${value.description}" />
+          <div class="card-body">
+            <h5 class="card-title">${value.description}</h5>
+            <p class="card-text">₱ ${Number(value.sell_price || 0).toFixed(2)}</p>
+            <a href="#!" class="btn btn-primary show-details" role="button"
+              data-id="${value.item_id}"
+              data-description="${value.description}"
+              data-price="${value.sell_price}"
+              data-image="${imagePath}"
+              data-stock="${value.quantity ?? 0}">Details</a>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  const renderFeaturedItems = (items) => {
+    const featuredItems = (items || []).slice(0, 6);
+    const featuredGrid = $('#featuredItemsGrid');
+
+    if (!featuredItems.length) {
+      featuredGrid.html('<div class="col-12"><p class="text-muted">No featured items available right now.</p></div>');
+      return;
+    }
+
+    featuredGrid.html(featuredItems.map(buildFeaturedItemCard).join(''));
+  }
+
+  const updateActiveFilterButtons = () => {
+    $('.filter-chip').removeClass('active');
+    $(`.filter-chip[data-category="${activeCategory}"]`).addClass('active');
+  }
+
+  const scrollToFeaturedItems = () => {
+    const featuredSection = document.getElementById('featuredItems');
+    if (featuredSection) {
+      featuredSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  const applyCategoryFilter = (category) => {
+    activeCategory = category;
+    updateActiveFilterButtons();
+    applyView();
+    scrollToFeaturedItems();
   }
 
   const renderCards = (items, append = false) => {
@@ -118,58 +184,17 @@ $(document).ready(function () {
     });
   }
 
-  const renderPaginationControls = () => {
-    const controls = $('#paginationControls');
-    const totalPages = Math.max(1, Math.ceil(filteredItems.length / pageSize));
-
-    if (mode !== 'pagination') {
-      controls.empty();
-      $('#paginationInfo').text('');
-      return;
-    }
-
-    const pages = [];
-    const startPage = Math.max(1, currentPage - 2);
-    const endPage = Math.min(totalPages, startPage + 4);
-
-    pages.push(`<button class="btn btn-outline-secondary btn-sm mr-2 page-action" data-page="prev" ${currentPage === 1 ? 'disabled' : ''}>Prev</button>`);
-
-    for (let page = startPage; page <= endPage; page++) {
-      pages.push(`<button class="btn btn-sm mr-2 page-action ${page === currentPage ? 'btn-primary' : 'btn-outline-primary'}" data-page="${page}">${page}</button>`);
-    }
-
-    pages.push(`<button class="btn btn-outline-secondary btn-sm page-action" data-page="next" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>`);
-
-    controls.html(pages.join(''));
-    $('#paginationInfo').text(`Page ${currentPage} of ${totalPages} • ${filteredItems.length} products`);
-  }
-
-  const renderPagination = () => {
-    const totalPages = Math.max(1, Math.ceil(filteredItems.length / pageSize));
-    if (currentPage > totalPages) {
-      currentPage = totalPages;
-    }
-
-    const start = (currentPage - 1) * pageSize;
-    const pageItems = filteredItems.slice(start, start + pageSize);
-    renderCards(pageItems, false);
-    renderPaginationControls();
-    $('#scrollSentinel').addClass('d-none');
-  }
-
   const renderInfiniteReset = () => {
     const itemsList = $('#itemsList');
     itemsList.empty();
     infinitePage = 1;
     loadingMore = false;
-    $('#paginationControls').empty();
-    $('#paginationInfo').text(`Loaded 0 of ${filteredItems.length} products`);
     $('#scrollSentinel').removeClass('d-none');
     appendInfinitePage();
   }
 
   const appendInfinitePage = () => {
-    if (mode !== 'infinite' || loadingMore) {
+    if (loadingMore) {
       return;
     }
 
@@ -188,7 +213,6 @@ $(document).ready(function () {
 
     renderCards(pageItems, infinitePage > 1);
     infinitePage += 1;
-    $('#paginationInfo').text(`Loaded ${Math.min((infinitePage - 1) * pageSize, filteredItems.length)} of ${filteredItems.length} products`);
 
     if ((infinitePage - 1) * pageSize >= filteredItems.length) {
       $('#scrollSentinel').text('You reached the end.');
@@ -201,19 +225,12 @@ $(document).ready(function () {
 
   const applyView = () => {
     filteredItems = getFilteredItems();
-
-    if (mode === 'pagination') {
-      currentPage = 1;
-      renderPagination();
-      return;
-    }
-
+    renderFeaturedItems(filteredItems);
     renderInfiniteReset();
   }
 
   const renderItems = (items) => {
     allItems = items.slice();
-    filteredItems = items.slice();
     applyView();
   }
 
@@ -223,7 +240,9 @@ $(document).ready(function () {
       url: `${url}api/v1/items${search ? `?search=${encodeURIComponent(search)}` : ''}`,
       dataType: 'json',
       success: function (data) {
-        renderItems(data.rows || []);
+        const rows = data.rows || [];
+        renderFeaturedItems(rows);
+        renderItems(rows);
       },
       error: function (error) {
         console.log(error);
@@ -267,39 +286,24 @@ $(document).ready(function () {
     });
   }
 
-  $('#paginationModeBtn').on('click', function () {
-    mode = 'pagination';
-    $('#scrollSentinel').addClass('d-none');
-    applyView();
+  $('.filter-chip').on('click', function () {
+    const category = $(this).data('category');
+    applyCategoryFilter(category);
   });
 
-  $('#infiniteModeBtn').on('click', function () {
-    mode = 'infinite';
-    applyView();
-  });
-
-  $('#paginationControls').on('click', '.page-action', function () {
-    if (mode !== 'pagination') {
-      return;
+  $('.category-filter-link').on('click', function (event) {
+    event.preventDefault();
+    const category = $(this).data('category');
+    applyCategoryFilter(category);
+    const targetId = $(this).attr('href');
+    const target = $(targetId);
+    if (target.length) {
+      $('html, body').animate({ scrollTop: target.offset().top - 20 }, 400);
     }
-
-    const totalPages = Math.max(1, Math.ceil(filteredItems.length / pageSize));
-    const target = $(this).data('page');
-
-    if (target === 'prev' && currentPage > 1) {
-      currentPage -= 1;
-    } else if (target === 'next' && currentPage < totalPages) {
-      currentPage += 1;
-    } else if (Number(target)) {
-      currentPage = Number(target);
-    }
-
-    renderPagination();
-    $('html, body').animate({ scrollTop: $('#items').offset().top - 20 }, 200);
   });
 
   $(window).on('scroll', function () {
-    if (mode !== 'infinite' || loadingMore) {
+    if (loadingMore) {
       return;
     }
 
@@ -311,6 +315,8 @@ $(document).ready(function () {
       appendInfinitePage();
     }
   });
+
+  updateActiveFilterButtons();
 
   if ($('#productDetailsModal').length === 0) {
     $('body').append(`

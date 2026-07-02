@@ -58,6 +58,84 @@ html {
     color: #ffffff;
 }
 
+.category-filter-bar {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+.filter-chip {
+    border-radius: 999px;
+}
+
+.filter-chip.active {
+    background: var(--teal-600);
+    border-color: var(--teal-600);
+    color: #ffffff;
+}
+
+.nav-account-item {
+    position: relative;
+    margin-left: 0.4rem;
+}
+
+.account-dropdown {
+    position: relative;
+}
+
+.account-toggle {
+    border: none;
+    background: rgba(255,255,255,0.14);
+    color: #ffffff;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.account-toggle:hover {
+    background: rgba(255,255,255,0.22);
+    transform: translateY(-2px);
+}
+
+.account-menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 0.5rem);
+    min-width: 150px;
+    background: #ffffff;
+    border: 1px solid rgba(15, 75, 115, 0.12);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(7, 109, 107, 0.14);
+    padding: 0.45rem 0;
+    display: none;
+    z-index: 2000;
+}
+
+.account-menu.show {
+    display: block;
+}
+
+.account-menu-link {
+    display: block;
+    padding: 0.6rem 0.9rem;
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.account-menu-link:hover {
+    background: rgba(7, 163, 160, 0.08);
+    color: var(--teal-700);
+    text-decoration: none;
+}
+
 .cart-badge {
     display:inline-block;
     background: var(--teal-600);
@@ -258,6 +336,59 @@ textarea:focus {
     .form-actions {
         flex-direction: column;
     }
+}
+
+/* Homepage category hero sections */
+.category-hero {
+    position: relative;
+    min-height: 100vh;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    border-radius: 0;
+    overflow: hidden;
+    color: #ffffff;
+    padding: 110px 20px 70px;
+}
+
+.category-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, rgba(11, 43, 47, 0.88), rgba(11, 43, 47, 0.55));
+    z-index: 0;
+}
+
+.category-hero .container {
+    position: relative;
+    z-index: 1;
+}
+
+.category-hero .hero-content {
+    max-width: 720px;
+    text-align: center;
+}
+
+.category-hero .hero-title,
+.category-hero .hero-tagline {
+    color: #ffffff;
+    text-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+}
+
+.category-hero-fullface {
+    background-image: url('../images/fullface.jpg');
+}
+
+.category-hero-halfface {
+    background-image: url('../images/halfface.jpg');
+}
+
+.category-hero-ridinggear {
+    background-image: url('../images/riding-gear.jpg');
 }
 
 /* DataTables spacing to avoid overlapping controls */

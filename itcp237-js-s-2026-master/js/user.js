@@ -2,8 +2,18 @@ $(document).ready(function () {
     const url = 'http://localhost:4000/';
 
     function getUserId() {
-        const userId = sessionStorage.getItem('user');
-        return userId ? JSON.parse(userId) : null;
+        const storedUser = sessionStorage.getItem('user');
+
+        if (!storedUser) {
+            return null;
+        }
+
+        try {
+            const parsedUser = JSON.parse(storedUser);
+            return parsedUser?.id ?? parsedUser ?? null;
+        } catch (error) {
+            return storedUser;
+        }
     }
 
     function getUserEmail() {
@@ -12,6 +22,14 @@ $(document).ready(function () {
 
     function getUserName() {
         return sessionStorage.getItem('userName') || '';
+    }
+
+    function getUserRole() {
+        const storedUser = sessionStorage.getItem('user');
+        const user = storedUser ? JSON.parse(storedUser) : null;
+        const role = user?.role;
+
+        return role || 'user';
     }
 
     function showSummaryMode() {
@@ -47,6 +65,30 @@ $(document).ready(function () {
         $('#summaryPhone').text(phone || 'Not provided');
         $('#summaryZip').text(zipcode || 'N/A');
         $('#avatarPreview, #avatarPreviewForm').attr('src', previewSrc);
+    }
+
+    const role = getUserRole();
+    const token = sessionStorage.getItem('token');
+    const isLoggedIn = Boolean(token);
+
+    if ($('#itemsMenu').length) {
+        $('#itemsMenu').toggleClass('d-none', !(role === 'admin' && isLoggedIn));
+    }
+
+    if ($('#usersMenu').length) {
+        $('#usersMenu').toggleClass('d-none', !(role === 'admin' && isLoggedIn));
+    }
+
+    if ($('#transactionsMenu').length) {
+        $('#transactionsMenu').toggleClass('d-none', !(role === 'admin' && isLoggedIn));
+    }
+
+    if ($('#browseMenu').length) {
+        $('#browseMenu').toggleClass('d-none', !(role === 'user' && isLoggedIn));
+    }
+
+    if ($('#cartIconMenu').length) {
+        $('#cartIconMenu').toggleClass('d-none', !(role === 'user' && isLoggedIn));
     }
 
     if ($('#registerForm').length && $.fn.validate) {
@@ -160,7 +202,12 @@ $(document).ready(function () {
                             timerProgressBar: true,
                         });
                         sessionStorage.setItem('token', data.token);
-                        sessionStorage.setItem('user', JSON.stringify(data.user.id));
+                        sessionStorage.setItem('user', JSON.stringify({
+                            id: data.user.id,
+                            role: data.user.role || 'user',
+                            name: data.user.name || '',
+                            email: data.user.email || '',
+                        }));
                         sessionStorage.setItem('role', JSON.stringify(data.user.role || 'user'));
                         sessionStorage.setItem('userName', data.user.name || '');
                         sessionStorage.setItem('email', data.user.email || '');
@@ -292,20 +339,11 @@ $(document).ready(function () {
     });
 
     $('#profile').load('header.html', function () {
-        if (sessionStorage.getItem('user')) {
-            const $loginLink = $('a.nav-link[href="login.html"]');
-            $loginLink.text('Logout').attr({ href: '#', id: 'logout-link' }).on('click', function (e) {
-                e.preventDefault();
-                Swal.fire({
-                    text: 'Logged out',
-                    showConfirmButton: false,
-                    position: 'bottom-right',
-                    timer: 1000,
-                    timerProgressBar: true,
-                });
-                sessionStorage.clear();
-                window.location.href = 'login.html';
-            });
+        if (sessionStorage.getItem('token')) {
+            const $logoutLink = $('#accountLogoutLink');
+            if ($logoutLink.length) {
+                $logoutLink.removeClass('d-none');
+            }
         }
     });
 
@@ -323,7 +361,7 @@ $(document).ready(function () {
         sessionStorage.removeItem('role');
         sessionStorage.removeItem('userName');
         sessionStorage.removeItem('email');
-        window.location.href = 'login.html';
+        window.location.href = 'home.html';
     });
 
     if ($('#profileSummary').length) {
