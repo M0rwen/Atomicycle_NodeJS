@@ -6,8 +6,69 @@ const { User, Customer } = require('../models');
 
 const normalizeUserRole = (role) => role || 'user';
 
+const splitAddressValue = (value) => {
+    const cleanValue = (value || '').toString().trim();
+
+    if (!cleanValue) {
+        return { addressline: '', town: '' };
+    }
+
+    const parts = cleanValue.split(',').map((part) => part.trim()).filter(Boolean);
+
+    if (parts.length <= 1) {
+        return { addressline: cleanValue, town: '' };
+    }
+
+    return {
+        addressline: parts[0],
+        town: parts.slice(1).join(', '),
+    };
+};
+
 const saveTokenForUser = async (userId, token) => {
     await User.update({ token }, { where: { id: userId } });
+};
+
+const getUserProfile = async (req, res) => {
+    const userId = req.user?.id || req.body?.user?.id;
+
+    if (!userId) {
+        return res.status(400).json({ error: 'User ID is required' });
+    }
+
+    try {
+        const [customer, created] = await Customer.findOrCreate({
+            where: { user_id: userId },
+            defaults: {
+                fname: '',
+                lname: '',
+                addressline: '',
+                zipcode: '',
+                phone: '',
+                user_id: userId,
+            },
+        });
+
+        const user = await User.findByPk(userId, {
+            attributes: ['id', 'name', 'email', 'role'],
+        });
+
+        const addressParts = splitAddressValue(customer.addressline);
+
+        return res.status(200).json({
+            success: true,
+            result: {
+                ...customer.get({ plain: true }),
+                ...addressParts,
+                name: user?.name || '',
+                email: user?.email || '',
+                role: normalizeUserRole(user?.role),
+            },
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ error: 'Error loading profile', details: error.message });
+    }
 };
 
 const registerUser = async (req, res) => {
@@ -95,34 +156,38 @@ const loginUser = async (req, res) => {
 };
 
 const updateUser = async (req, res) => {
-    const { fname, lname, addressline, zipcode, phone, userId } = req.body;
-    const imagePath = req.file ? req.file.path.replace(/\\/g, '/') : undefined;
+    const { fname, lname, addressline, zipcode, phone, userId, town } = req.body;
+    const imagePath = req.file
+        ? `/images/${req.file.filename}`
+        : undefined;
+    const resolvedUserId = userId || req.user?.id || req.body?.user?.id;
+    const fullAddress = [addressline, town].filter((value) => typeof value === 'string' && value.trim()).join(', ');
 
-    if (!userId) {
+    if (!resolvedUserId) {
         return res.status(400).json({ error: 'User ID is required' });
     }
 
     try {
         const [customer, created] = await Customer.findOrCreate({
-            where: { user_id: userId },
+            where: { user_id: resolvedUserId },
             defaults: {
                 fname: fname || '',
                 lname: lname || '',
-                addressline: addressline || '',
+                addressline: fullAddress,
                 zipcode: zipcode || '',
                 phone: phone || '',
                 image_path: imagePath || null,
-                user_id: userId,
+                user_id: resolvedUserId,
             },
         });
 
         if (!created) {
             await customer.update({
-                fname,
-                lname,
-                addressline,
-                zipcode,
-                phone,
+                fname: fname || '',
+                lname: lname || '',
+                addressline: fullAddress,
+                zipcode: zipcode || '',
+                phone: phone || '',
                 ...(imagePath ? { image_path: imagePath } : {}),
             });
         }
@@ -235,6 +300,7 @@ const deactivateUserById = async (req, res) => {
 module.exports = {
     registerUser,
     loginUser,
+    getUserProfile,
     updateUser,
     deactivateUser,
     getAllUsers,

@@ -1,12 +1,65 @@
 const { Op } = require('sequelize');
 const { sequelize, Item, Stock } = require('../models');
 
+const normalizeImageValue = (value) => {
+    if (!value) {
+        return '';
+    }
+
+    if (Array.isArray(value)) {
+        return value.map(normalizeImageValue).filter(Boolean);
+    }
+
+    const rawValue = String(value).trim();
+    if (!rawValue) {
+        return '';
+    }
+
+    if (typeof value === 'string') {
+        try {
+            const parsed = JSON.parse(rawValue);
+            if (Array.isArray(parsed)) {
+                return parsed.map(normalizeImageValue).filter(Boolean);
+            }
+        } catch (error) {
+            // keep going with the raw string value
+        }
+    }
+
+    const normalizedValue = rawValue.replace(/\\/g, '/');
+
+    if (/^https?:\/\//i.test(normalizedValue)) {
+        try {
+            const parsedUrl = new URL(normalizedValue);
+            return parsedUrl.pathname.startsWith('/images/') ? parsedUrl.pathname : `/images/${parsedUrl.pathname.split('/').filter(Boolean).pop()}`;
+        } catch (error) {
+            return normalizedValue;
+        }
+    }
+
+    if (normalizedValue.includes('/images/')) {
+        const matched = normalizedValue.match(/\/images\/[^?#]+/i);
+        return matched ? matched[0] : normalizedValue;
+    }
+
+    const fileName = normalizedValue.split('/').filter(Boolean).pop();
+    return fileName ? `/images/${fileName}` : normalizedValue;
+};
+
 const toImageList = (files) => {
     if (!files || files.length === 0) {
         return [];
     }
 
-    return files.map((file) => file.path.replace(/\\/g, '/'));
+    return files
+        .map((file) => {
+            if (typeof file === 'string') {
+                return normalizeImageValue(file);
+            }
+
+            return normalizeImageValue(file.path || file.filename || file.originalname);
+        })
+        .filter(Boolean);
 };
 
 const getStoredImageValue = (row) => {
@@ -17,20 +70,20 @@ const getStoredImageValue = (row) => {
     }
 
     if (Array.isArray(rawValue)) {
-        return rawValue;
+        return rawValue.map(normalizeImageValue).filter(Boolean);
     }
 
     if (typeof rawValue === 'string') {
         try {
             const parsed = JSON.parse(rawValue);
             if (Array.isArray(parsed)) {
-                return parsed;
+                return parsed.map(normalizeImageValue).filter(Boolean);
             }
         } catch (error) {
-            return [rawValue];
+            return [normalizeImageValue(rawValue)].filter(Boolean);
         }
 
-        return [rawValue];
+        return [normalizeImageValue(rawValue)].filter(Boolean);
     }
 
     return [];
@@ -39,6 +92,7 @@ const getStoredImageValue = (row) => {
 const normalizeItem = (item) => {
     const plainItem = item.get({ plain: true });
     plainItem.quantity = plainItem.Stock?.quantity ?? plainItem.quantity ?? 0;
+    plainItem.img_path = getStoredImageValue(plainItem);
     delete plainItem.Stock;
     return plainItem;
 };

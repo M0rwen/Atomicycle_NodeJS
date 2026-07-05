@@ -27,6 +27,27 @@ $(document).ready(function () {
 
         return '';
     }
+
+    const resolveImageUrl = (value) => {
+        const imagePath = resolveImagePath(value);
+
+        if (!imagePath) {
+            return '';
+        }
+
+        const normalizedPath = String(imagePath).trim().replace(/\\/g, '/');
+
+        if (/^https?:\/\//i.test(normalizedPath)) {
+            return normalizedPath;
+        }
+
+        if (normalizedPath.startsWith('/images/')) {
+            return `${url}${normalizedPath}`;
+        }
+
+        const cleanPath = normalizedPath.replace(/^\/+/, '');
+        return `${url}/${cleanPath}`;
+    }
     const getToken = () => {
         const token = sessionStorage.getItem('token');
 
@@ -68,8 +89,8 @@ $(document).ready(function () {
             {
                 data: null,
                 render: function (data, type, row) {
-                    const imagePath = resolveImagePath(data.img_path);
-                    return imagePath ? `<img src="${url}/${imagePath}" width="50" height="60">` : '';
+                    const imageUrl = resolveImageUrl(data.img_path);
+                    return imageUrl ? `<img src="${imageUrl}" width="50" height="60">` : '';
                 }
             },
 
@@ -183,7 +204,10 @@ $(document).ready(function () {
                 $('#sell').val(sell_price)
                 $('#cost').val(cost_price)
                 $('#qty').val(quantity)
-                $("#iform").append(`<img src="${url}/${img_path}" width='200px', height='200px' id="itemImage"   />`)
+                const imageUrl = resolveImageUrl(img_path);
+                if (imageUrl) {
+                    $("#iform").append(`<img src="${imageUrl}" width='200px' height='200px' id="itemImage" />`)
+                }
 
             },
             error: function (error) {

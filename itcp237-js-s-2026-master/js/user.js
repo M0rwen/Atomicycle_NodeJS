@@ -46,6 +46,15 @@ $(document).ready(function () {
         $('#editProfileBtn').addClass('d-none');
     }
 
+    function getAvatarUrl(imagePath) {
+        if (!imagePath) {
+            return 'https://via.placeholder.com/130?text=Avatar';
+        }
+
+        const normalizedPath = String(imagePath).replace(/^\/+/, '');
+        return `${url}${normalizedPath}`;
+    }
+
     function updateProfileSummary() {
         const title = $('#title').val().trim();
         const fname = $('#firstName').val().trim();
@@ -65,6 +74,61 @@ $(document).ready(function () {
         $('#summaryPhone').text(phone || 'Not provided');
         $('#summaryZip').text(zipcode || 'N/A');
         $('#avatarPreview, #avatarPreviewForm').attr('src', previewSrc);
+    }
+
+    function populateProfileForm(profile) {
+        const safeProfile = profile || {};
+
+        $('#title').val(safeProfile.title || '');
+        $('#firstName').val(safeProfile.fname || '');
+        $('#lastName').val(safeProfile.lname || '');
+        $('#phone').val(safeProfile.phone || '');
+        $('#address').val(safeProfile.addressline || '');
+        $('#town').val(safeProfile.town || '');
+        $('#zipcode').val(safeProfile.zipcode || '');
+
+        if (safeProfile.name) {
+            sessionStorage.setItem('userName', safeProfile.name);
+        }
+
+        if (safeProfile.email) {
+            sessionStorage.setItem('email', safeProfile.email);
+        }
+
+        const avatarUrl = getAvatarUrl(safeProfile.image_path || safeProfile.image || safeProfile.avatar);
+        $('#avatarPreview').attr('src', avatarUrl);
+        $('#avatarPreviewForm').attr('src', avatarUrl);
+
+        updateProfileSummary();
+    }
+
+    function loadProfile() {
+        const token = sessionStorage.getItem('token');
+
+        if (!token || !$('#profileForm').length) {
+            updateProfileSummary();
+            return;
+        }
+
+        $.ajax({
+            method: 'GET',
+            url: `${url}api/v1/profile`,
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+            dataType: 'json',
+            success: function (response) {
+                if (response?.success && response.result) {
+                    populateProfileForm(response.result);
+                    return;
+                }
+
+                updateProfileSummary();
+            },
+            error: function () {
+                updateProfileSummary();
+            },
+        });
     }
 
     const role = getUserRole();
@@ -270,6 +334,14 @@ $(document).ready(function () {
         const formData = new FormData(form);
         formData.append('userId', userId);
 
+        const addressline = $('#address').val().trim();
+        const town = $('#town').val().trim();
+        if (addressline || town) {
+            formData.set('addressline', addressline);
+            formData.set('town', town);
+        }
+
+        const token = sessionStorage.getItem('token');
         $('#updateBtn').prop('disabled', true).text('Saving...');
 
         $.ajax({
@@ -279,6 +351,9 @@ $(document).ready(function () {
             contentType: false,
             processData: false,
             dataType: 'json',
+            headers: {
+                Authorization: `Bearer ${token || ''}`,
+            },
             success: function (response) {
                 Swal.fire({
                     icon: 'success',
@@ -288,7 +363,19 @@ $(document).ready(function () {
                     timer: 1500,
                     timerProgressBar: true,
                 });
-                updateProfileSummary();
+
+                const profilePayload = response?.result || {
+                    fname: $('#firstName').val().trim(),
+                    lname: $('#lastName').val().trim(),
+                    phone: $('#phone').val().trim(),
+                    addressline: $('#address').val().trim(),
+                    town: $('#town').val().trim(),
+                    zipcode: $('#zipcode').val().trim(),
+                    name: getUserName(),
+                    email: getUserEmail(),
+                };
+
+                populateProfileForm(profilePayload);
                 showSummaryMode();
             },
             error: function (error) {
@@ -365,7 +452,7 @@ $(document).ready(function () {
     });
 
     if ($('#profileSummary').length) {
-        updateProfileSummary();
+        loadProfile();
         showSummaryMode();
     }
 });

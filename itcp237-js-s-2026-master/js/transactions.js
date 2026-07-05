@@ -49,11 +49,24 @@ $(document).ready(function () {
     const table = $('#transactionsTable').DataTable({
         ajax: {
             url: `${url}/api/v1/transactions`,
-            dataSrc: 'rows',
+            dataSrc: function (json) {
+                if (Array.isArray(json)) {
+                    return json;
+                }
+
+                if (Array.isArray(json.rows)) {
+                    return json.rows;
+                }
+
+                if (Array.isArray(json.result)) {
+                    return json.result;
+                }
+
+                return [];
+            },
             beforeSend: function (jqXHR, settings) {
                 const token = getToken();
                 if (!token) {
-                    // getToken will redirect to login if missing
                     return false;
                 }
                 jqXHR.setRequestHeader('Authorization', `Bearer ${token}`);
@@ -63,7 +76,7 @@ $(document).ready(function () {
                 Swal.fire({
                     icon: 'error',
                     title: 'Unable to load transactions',
-                    text: xhr.responseJSON?.message || xhr.responseText || 'Please refresh and try again.',
+                    text: xhr.responseJSON?.message || xhr.responseJSON?.error || xhr.responseText || 'Please refresh and try again.',
                 });
             }
         },

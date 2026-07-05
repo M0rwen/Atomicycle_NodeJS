@@ -36,6 +36,10 @@ const authorizeRoles = (...allowedRoles) => {
             return;
         }
 
+        req.user = { id: decoded.id, role: decoded.role };
+        req.body = req.body || {};
+        req.body.user = req.user;
+
         User.findOne({
             where: {
                 id: decoded.id,
@@ -48,8 +52,8 @@ const authorizeRoles = (...allowedRoles) => {
                 return res.status(403).json({ message: 'Admin access required' });
             }
 
-            req.body = req.body || {};
-            req.body.user = { id: decoded.id, role };
+            req.user = { id: decoded.id, role };
+            req.body.user = req.user;
             next();
         }).catch((err) => {
             console.log(err);
@@ -65,8 +69,9 @@ exports.isAuthenticatedUser = (req, res, next) => {
         return;
     }
 
+    req.user = { id: decoded.id, role: decoded.role };
     req.body = req.body || {};
-    req.body.user = { id: decoded.id, role: decoded.role };
+    req.body.user = req.user;
     next();
 };
 

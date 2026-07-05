@@ -72,6 +72,23 @@ $(document).ready(function () {
     return '';
   }
 
+  const resolveImageUrl = (value) => {
+    const imagePath = normalizeImagePath(value);
+
+    if (!imagePath) {
+      return '';
+    }
+
+    const normalizedPath = String(imagePath).trim().replace(/\\/g, '/');
+
+    if (/^https?:\/\//i.test(normalizedPath)) {
+      return normalizedPath;
+    }
+
+    const cleanPath = normalizedPath.replace(/^\/+/, '');
+    return `${url.replace(/\/$/, '')}/${cleanPath}`;
+  }
+
   const matchesCategory = (item, category) => {
     const description = (item.description || '').toLowerCase();
 
@@ -101,21 +118,21 @@ $(document).ready(function () {
   }
 
   const buildItemCard = (value) => {
-    const imagePath = normalizeImagePath(value.img_path);
+    const imageUrl = resolveImageUrl(value.img_path);
     return `<div class="col-md-3 mb-4">
-                <div class="card h-100"><img src="${url}/${imagePath}" class="card-img-top" alt="${value.description}" ><div class="card-body"><h5 class="card-title">${value.description}</h5><p class="card-text">₱ ${value.sell_price}</p><p class="card-text"><small class="text-muted">Stock: ${value.quantity ?? 0}</small></p><a href="#!" class="btn btn-primary show-details" role="button" data-id="${value.item_id}"
+                <div class="card h-100"><img src="${imageUrl || 'https://via.placeholder.com/300x220?text=No+Image'}" class="card-img-top" alt="${value.description}" ><div class="card-body"><h5 class="card-title">${value.description}</h5><p class="card-text">₱ ${value.sell_price}</p><p class="card-text"><small class="text-muted">Stock: ${value.quantity ?? 0}</small></p><a href="#!" class="btn btn-primary show-details" role="button" data-id="${value.item_id}"
                                     data-description="${value.description}"
                                     data-price="${value.sell_price}"
-                                    data-image="${imagePath}"
+                                    data-image="${imageUrl}"
                                     data-stock="${value.quantity ?? 0}">Details</a></div></div></div>`;
   }
 
   const buildFeaturedItemCard = (value) => {
-    const imagePath = normalizeImagePath(value.img_path);
+    const imageUrl = resolveImageUrl(value.img_path);
     return `
       <div class="col-lg-4 col-md-6 mb-4">
         <div class="card featured-item-card h-100">
-          <img src="${url}/${imagePath}" class="card-img-top" alt="${value.description}" />
+          <img src="${imageUrl || 'https://via.placeholder.com/300x220?text=No+Image'}" class="card-img-top" alt="${value.description}" />
           <div class="card-body">
             <h5 class="card-title">${value.description}</h5>
             <p class="card-text">₱ ${Number(value.sell_price || 0).toFixed(2)}</p>
@@ -123,7 +140,7 @@ $(document).ready(function () {
               data-id="${value.item_id}"
               data-description="${value.description}"
               data-price="${value.sell_price}"
-              data-image="${imagePath}"
+              data-image="${imageUrl}"
               data-stock="${value.quantity ?? 0}">Details</a>
           </div>
         </div>
@@ -349,7 +366,7 @@ $(document).ready(function () {
 
     $('#productDetailsModalLabel').text(description);
     $('#productDetailsModalBody').html(`
-                        <img src="${url}${image}" class="img-fluid mb-3" style="max-height:200px;">
+                        <img src="${image || 'https://via.placeholder.com/300x220?text=No+Image'}" class="img-fluid mb-3" style="max-height:200px;">
                         <p id="price">Price: ₱<strong>${price}</strong></p>
                         <p>Stock: ${stock}</p>
                         <input type="number" class="form-control mb-3" id="detailsQty" min="1" max="${stock}" value="1">
