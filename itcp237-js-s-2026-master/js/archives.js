@@ -1,5 +1,5 @@
 $(document).ready(function () {
-  const baseUrl = 'http://localhost:4000';
+  const baseUrl = window.location.origin && window.location.origin !== 'null' ? window.location.origin : 'http://localhost:4000';
 
   $('#home').load('header.html');
 

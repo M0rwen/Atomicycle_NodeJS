@@ -1,5 +1,6 @@
 $(document).ready(function () {
-    const url = 'http://localhost:4000/';
+    const baseUrl = window.location.origin && window.location.origin !== 'null' ? window.location.origin : 'http://localhost:4000';
+    const url = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
 
     if ($.validator) {
         $.validator.setDefaults({
@@ -331,7 +332,7 @@ $(document).ready(function () {
 
                 $.ajax({
                     method: 'POST',
-                    url: `${url}api/v1/register`,
+                    url: 'http://localhost:4000/api/v1/register',
                     data: JSON.stringify(user),
                     processData: false,
                     contentType: 'application/json; charset=utf-8',
@@ -387,7 +388,7 @@ $(document).ready(function () {
 
                 $.ajax({
                     method: 'POST',
-                    url: `${url}api/v1/login`,
+                    url: 'http://localhost:4000/api/v1/login',
                     data: JSON.stringify(user),
                     processData: false,
                     contentType: 'application/json; charset=utf-8',

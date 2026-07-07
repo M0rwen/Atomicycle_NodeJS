@@ -143,26 +143,6 @@ const loginUser = async (req, res) => {
     }
 };
 
-const getUserProfile = async (req, res) => {
-    const userId = req.query.userId;
-
-    if (!userId) {
-        return res.status(400).json({ error: 'User ID is required' });
-    }
-
-    try {
-        const customer = await Customer.findOne({ where: { user_id: userId } });
-
-        return res.status(200).json({
-            success: true,
-            result: customer ? customer.get({ plain: true }) : {},
-        });
-    } catch (error) {
-        console.log(error);
-        return res.status(500).json({ error: 'Error loading profile', details: error.message });
-    }
-};
-
 const updateUser = async (req, res) => {
     const { fname, lname, addressline, zipcode, phone, userId, town } = req.body;
     const imagePath = req.file

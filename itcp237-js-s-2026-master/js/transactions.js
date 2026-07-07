@@ -1,7 +1,8 @@
 $(document).ready(function () {
     $('#home').load('header.html');
 
-    const url = 'http://localhost:4000';
+    const baseUrl = window.location.origin && window.location.origin !== 'null' ? window.location.origin : 'http://localhost:4000';
+    const url = baseUrl;
 
     const getToken = () => {
         const token = sessionStorage.getItem('token');
