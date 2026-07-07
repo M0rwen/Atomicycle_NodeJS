@@ -1,5 +1,5 @@
 $(document).ready(function () {
-  const baseUrl = window.location.origin && window.location.origin !== 'null' ? window.location.origin : 'http://localhost:4000';
+  const baseUrl = 'http://localhost:4000';
   const url = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
   const pageSize = 4;
   let allItems = [];
@@ -16,21 +16,41 @@ $(document).ready(function () {
     }
 
     if (Array.isArray(value)) {
-      return value[0] || '';
+      return normalizeImagePath(value[0]);
+    }
+
+    if (typeof value === 'object') {
+      return normalizeImagePath(value.path || value.src || value.url || '');
     }
 
     if (typeof value === 'string') {
       try {
         const parsed = JSON.parse(value);
         if (Array.isArray(parsed)) {
-          return parsed[0] || '';
+          return normalizeImagePath(parsed[0]);
         }
       } catch (error) {
-        return value;
+        // fall through and use the raw string
       }
+      return value;
     }
 
     return '';
+  };
+
+  const resolveImageUrl = (value) => {
+    const imagePath = normalizeImagePath(value);
+    if (!imagePath) {
+      return '';
+    }
+
+    const normalizedPath = String(imagePath).trim().replace(/\\/g, '/');
+    if (/^https?:\/\//i.test(normalizedPath)) {
+      return normalizedPath;
+    }
+
+    const cleanPath = normalizedPath.replace(/^\/+/, '');
+    return `${url.replace(/\/$/, '')}/${cleanPath}`;
   };
 
   const matchesCategory = (item, category) => {
@@ -62,12 +82,12 @@ $(document).ready(function () {
   };
 
   const buildItemCard = (item) => {
-    const imagePath = normalizeImagePath(item.img_path);
+    const imageUrl = resolveImageUrl(item.img_path) || 'https://via.placeholder.com/300x220?text=No+Image';
 
     return `
       <div class="col-lg-3 col-md-6 mb-4">
         <div class="card browse-card h-100">
-          <img src="${url}${imagePath}" class="card-img-top" alt="${item.description}" />
+          <img src="${imageUrl}" class="card-img-top" alt="${item.description}" />
           <div class="card-body">
             <h5 class="card-title">${item.description}</h5>
             <p class="card-text">₱ ${Number(item.sell_price || 0).toFixed(2)}</p>

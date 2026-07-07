@@ -1,5 +1,5 @@
 $(document).ready(function () {
-  const baseUrl = window.location.origin && window.location.origin !== 'null' ? window.location.origin : 'http://localhost:4000';
+  const baseUrl = 'http://localhost:4000';
   const url = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
   const pageSize = 8;
   let itemCount = 0;
