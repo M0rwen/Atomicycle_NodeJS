@@ -60,18 +60,23 @@ $(document).ready(function () {
     }
 
     if (Array.isArray(value)) {
-      return value[0] || '';
+      return normalizeImagePath(value[0]);
+    }
+
+    if (typeof value === 'object') {
+      return normalizeImagePath(value.path || value.src || value.url || '');
     }
 
     if (typeof value === 'string') {
       try {
         const parsed = JSON.parse(value);
         if (Array.isArray(parsed)) {
-          return parsed[0] || '';
+          return normalizeImagePath(parsed[0]);
         }
       } catch (error) {
-        return value;
+        // fall through and use the raw string
       }
+      return value;
     }
 
     return '';
@@ -299,12 +304,19 @@ $(document).ready(function () {
 
   const applyView = () => {
     filteredItems = getFilteredItems();
+    console.log('home applyView', {
+      activeCategory,
+      search: $('#homeSearch').val(),
+      filteredCount: filteredItems.length,
+      totalCount: allItems.length,
+    });
     renderFeaturedItems(filteredItems);
     renderInfiniteReset();
   }
 
   const renderItems = (items) => {
     allItems = items.slice();
+    console.log('home renderItems', { totalItems: allItems.length, first: allItems[0] });
     applyView();
   }
 
@@ -314,7 +326,8 @@ $(document).ready(function () {
       url: `${url}api/v1/items${search ? `?search=${encodeURIComponent(search)}` : ''}`,
       dataType: 'json',
       success: function (data) {
-        const rows = data.rows || [];
+        const rows = Array.isArray(data.rows) ? data.rows : [];
+        console.log('home loadItems success', { rows: rows.length, sample: rows[0] });
         renderFeaturedItems(rows);
         renderItems(rows);
       },
