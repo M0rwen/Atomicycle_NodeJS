@@ -1,5 +1,6 @@
 $(document).ready(function () {
-  const baseUrl = window.location.origin && window.location.origin !== 'null' ? window.location.origin : 'http://localhost:4000';
+  
+  const url = 'http://localhost:4000';
 
   $('#home').load('header.html');
 
@@ -219,3 +220,4 @@ $(document).ready(function () {
 
   reloadTables();
 });
+  const url = 'http://localhost:4000';

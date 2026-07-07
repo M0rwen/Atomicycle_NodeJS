@@ -1,6 +1,5 @@
 $(document).ready(function () {
-  const baseUrl = window.location.origin && window.location.origin !== 'null' ? window.location.origin : 'http://localhost:4000';
-  const url = baseUrl;
+  const url = 'http://localhost:4000';
   const urlParams = new URLSearchParams(window.location.search);
   const itemId = urlParams.get('id');
 

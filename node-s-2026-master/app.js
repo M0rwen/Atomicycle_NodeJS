@@ -14,7 +14,9 @@ const frontendDir = path.join(__dirname, '..', 'itcp237-js-s-2026-master');
 app.use(cors())
 app.use(express.json())
 app.use(express.static(frontendDir));
-app.use('/images', express.static(path.join(__dirname, 'images')))
+// Product uploads first; fall through to frontend decorative images (hero, category banners)
+app.use('/images', express.static(path.join(__dirname, 'images')));
+app.use('/images', express.static(path.join(frontendDir, 'images')));
 
 app.get('/', (req, res) => res.sendFile(path.join(frontendDir, 'home.html')));
 

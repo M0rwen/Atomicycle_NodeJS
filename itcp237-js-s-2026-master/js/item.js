@@ -1,5 +1,6 @@
 $(document).ready(function () {
     $("#home").load("header.html")
+    
     const url = 'http://localhost:4000'
     const _rawToken = sessionStorage.getItem('token');
     const token = _rawToken ? (_rawToken.startsWith('"') ? JSON.parse(_rawToken) : _rawToken) : null

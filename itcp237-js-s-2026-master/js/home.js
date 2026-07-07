@@ -1,6 +1,6 @@
 $(document).ready(function () {
-  const baseUrl = 'http://localhost:4000';
-  const url = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+  
+  const url = 'http://localhost:4000/';
   const pageSize = 8;
   let itemCount = 0;
   let priceTotal = 0;

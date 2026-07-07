@@ -1,6 +1,6 @@
 $(document).ready(function () {
-    const baseUrl = window.location.origin && window.location.origin !== 'null' ? window.location.origin : 'http://localhost:4000';
-    const url = baseUrl;
+    
+    const url = 'http://localhost:4000';
 
     function getUserId() {
         const raw = sessionStorage.getItem('user');
