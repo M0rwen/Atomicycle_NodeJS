@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous" />
+    <link rel="stylesheet" href="css/style.css" />
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js" integrity="sha256-oP6HI9z1XaZNBrJURtCoUT5SUnxFr8s3BzRl+cbzUq8=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+    <script type="text/javascript" src="js/browse.js"></script>
+    <script type="text/javascript" src="js/user.js"></script>
+    <title>Browse Products</title>
+    <style>
+      body {
+        background: var(--bg);
+      }
+
+      .page-title {
+        color: var(--text);
+        font-weight: 700;
+      }
+
+      .browse-card {
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        overflow: hidden;
+        background: var(--panel);
+        box-shadow: 0 10px 30px rgba(7, 109, 107, 0.04);
+      }
+
+      .browse-card .card-img-top {
+        height: 220px;
+        object-fit: cover;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="home"></div>
+
+    <section id="browseSection" class="container py-5">
+      <div class="mb-4">
+        <h2 class="page-title mb-2">Browse Products</h2>
+        <p class="text-muted mb-0">Discover helmets and riding gear with a seamless infinite scroll experience.</p>
+      </div>
+
+      <div class="row mb-4">
+        <div class="col-md-6 mb-3 mb-md-0">
+          <input type="text" id="browseSearch" class="form-control" placeholder="Search products..." />
+        </div>
+        <div class="col-md-6 text-md-right">
+          <div class="category-filter-bar" role="group" aria-label="Product filters">
+            <button type="button" class="btn btn-sm btn-outline-primary mr-2 filter-chip active" data-category="all">All Products</button>
+            <button type="button" class="btn btn-sm btn-outline-primary mr-2 filter-chip" data-category="fullface">Full Face Helmets</button>
+            <button type="button" class="btn btn-sm btn-outline-primary mr-2 filter-chip" data-category="halfface">Half Face Helmets</button>
+            <button type="button" class="btn btn-sm btn-outline-primary filter-chip" data-category="ridinggear">Riding Gear</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="browseItemsGrid" class="row"></div>
+      <div id="browseItemsLoader" class="text-center py-3 d-none">
+        <div class="spinner-border text-primary" role="status">
+          <span class="sr-only">Loading...</span>
+        </div>
+      </div>
+      <div id="browseItemsStatus" class="text-center text-muted py-3 d-none"></div>
+    </section>
+  </body>
+</html>

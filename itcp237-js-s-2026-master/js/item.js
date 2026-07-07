@@ -5,27 +5,49 @@ $(document).ready(function () {
     const token = _rawToken ? (_rawToken.startsWith('"') ? JSON.parse(_rawToken) : _rawToken) : null
     const role = sessionStorage.getItem('role') ? JSON.parse(sessionStorage.getItem('role')) : 'user'
     const isAdmin = role === 'admin'
-    const resolveImagePath = (value) => {
+    const resolveImagePaths = (value) => {
         if (!value) {
-            return '';
+            return [];
         }
 
         if (Array.isArray(value)) {
-            return value[0] || '';
+            return value.filter(Boolean);
         }
 
         if (typeof value === 'string') {
             try {
                 const parsed = JSON.parse(value);
                 if (Array.isArray(parsed)) {
-                    return parsed[0] || '';
+                    return parsed.filter(Boolean);
+                }
+                if (typeof parsed === 'string' && parsed) {
+                    return [parsed];
                 }
             } catch (error) {
-                return value;
+                return [value];
             }
         }
 
-        return '';
+        return [];
+    }
+
+    const buildItemImageUrl = (value, row = {}) => {
+        const imagePaths = resolveImagePaths(value);
+        const imagePath = imagePaths[0] || '';
+        if (!imagePath) {
+            return '';
+        }
+
+        const normalizedPath = String(imagePath).replace(/\\/g, '/').replace(/^\/+/, '');
+        if (!normalizedPath) {
+            return '';
+        }
+
+        if (/^https?:\/\//i.test(normalizedPath)) {
+            return normalizedPath;
+        }
+
+        return `${url}/${normalizedPath}`;
     }
 
     const resolveImageUrl = (value) => {
@@ -64,6 +86,92 @@ $(document).ready(function () {
         return token.startsWith('"') ? JSON.parse(token) : token;
     }
 
+    const initItemFormValidation = () => {
+        if (!$.fn.validate) {
+            return;
+        }
+
+        const $form = $('#iform');
+        if ($form.data('validator')) {
+            $form.validate().destroy();
+        }
+
+        $form.validate({
+            errorClass: 'text-danger',
+            errorElement: 'div',
+            errorPlacement: function (error, element) {
+                error.insertAfter(element);
+            },
+            highlight: function (element) {
+                $(element).addClass('is-invalid');
+            },
+            unhighlight: function (element) {
+                $(element).removeClass('is-invalid');
+            },
+            rules: {
+                description: {
+                    required: true,
+                    minlength: 3,
+                },
+                sell_price: {
+                    required: true,
+                    number: true,
+                    min: 1,
+                },
+                cost_price: {
+                    required: true,
+                    number: true,
+                    min: 1,
+                },
+                quantity: {
+                    required: true,
+                    digits: true,
+                    min: 0,
+                },
+                images: {
+                    required: function () {
+                        return !$('#itemId').length;
+                    },
+                },
+            },
+            messages: {
+                description: {
+                    required: 'Description is required',
+                    minlength: 'Description must be at least 3 characters',
+                },
+                sell_price: {
+                    required: 'Sell price is required',
+                    number: 'Sell price must be a number',
+                    min: 'Sell price must be at least 1',
+                },
+                cost_price: {
+                    required: 'Cost price is required',
+                    number: 'Cost price must be a number',
+                    min: 'Cost price must be at least 1',
+                },
+                quantity: {
+                    required: 'Quantity is required',
+                    digits: 'Quantity must be a whole number',
+                    min: 'Quantity must be at least 0',
+                },
+                images: {
+                    required: 'Please select an image for the new item',
+                },
+            },
+        });
+    };
+
+    const resetItemFormValidation = () => {
+        const $form = $('#iform');
+        if ($form.data('validator')) {
+            $form.validate().resetForm();
+        }
+        $form.find('.is-invalid').removeClass('is-invalid');
+        $form.find('.text-danger').remove();
+    };
+
+    initItemFormValidation();
+
     $('#itable').DataTable({
         ajax: {
             url: `${url}/api/v1/items`,
@@ -78,6 +186,7 @@ $(document).ready(function () {
                 className: 'btn btn-primary',
                 action: function (e, dt, node, config) {
                     $("#iform").trigger("reset");
+                    resetItemFormValidation();
                     $('#itemModal').modal('show');
                     $('#itemUpdate').hide();
                     $('#itemImage').remove()
@@ -87,10 +196,15 @@ $(document).ready(function () {
         columns: [
             { data: 'item_id' },
             {
-                data: null,
+                data: 'img_path',
                 render: function (data, type, row) {
-                    const imageUrl = resolveImageUrl(data.img_path);
-                    return imageUrl ? `<img src="${imageUrl}" width="50" height="60">` : '';
+                    const imageUrl = buildItemImageUrl(data, row);
+                    if (!imageUrl) {
+                        return '';
+                    }
+
+                    const cacheBuster = type === 'display' ? `?t=${Date.now()}&item=${row.item_id || 0}` : '';
+                    return `<img src="${imageUrl}${cacheBuster}" class="item-image-preview" alt="${row.description || 'Item image'}" width="50" height="60">`;
                 }
             },
 
@@ -116,6 +230,9 @@ $(document).ready(function () {
             return;
         }
         e.preventDefault();
+        if (!$('#iform').valid()) {
+            return;
+        }
         var data = $('#iform')[0];
         console.log(data);
         // if (getToken()) {
@@ -148,7 +265,9 @@ $(document).ready(function () {
                     position: 'bottom-right'
                 });
                 var $itable = $('#itable').DataTable();
-                $itable.ajax.reload()
+                $itable.ajax.reload(function () {
+                    $itable.columns.adjust().draw(false);
+                }, false);
             },
             error: function (error) {
                 Swal.fire({
@@ -176,6 +295,7 @@ $(document).ready(function () {
         $('#itemImage').remove()
         $('#itemId').remove()
         $("#iform").trigger("reset");
+        resetItemFormValidation();
         var id = $(this).data('id');
         console.log(id);
         $('#itemModal').modal('show');
@@ -204,9 +324,15 @@ $(document).ready(function () {
                 $('#sell').val(sell_price)
                 $('#cost').val(cost_price)
                 $('#qty').val(quantity)
-                const imageUrl = resolveImageUrl(img_path);
-                if (imageUrl) {
-                    $("#iform").append(`<img src="${imageUrl}" width='200px' height='200px' id="itemImage" />`)
+
+                const imagePaths = resolveImagePaths(img_path);
+                $('#itemImage').remove();
+                if (imagePaths.length) {
+                    const previewMarkup = imagePaths.map((path) => {
+                        const previewUrl = buildItemImageUrl(path);
+                        return `<img src="${previewUrl}" width='200px' height='200px' id="itemImage" class="item-image-preview-large mr-2 mb-2" />`;
+                    }).join('');
+                    $("#iform").append(previewMarkup);
                 }
 
             },
@@ -221,6 +347,9 @@ $(document).ready(function () {
             return;
         }
         e.preventDefault();
+        if (!$('#iform').valid()) {
+            return;
+        }
         var id = $('#itemId').val();
         console.log(id);
         var table = $('#itable').DataTable();
@@ -243,6 +372,7 @@ $(document).ready(function () {
                 console.log(data);
                 $('#itemModal').modal("hide");
                 $('#iform').trigger('reset');
+                resetItemFormValidation();
                 Swal.fire({
                     icon: "success",
                     text: "Item updated successfully",
@@ -250,7 +380,9 @@ $(document).ready(function () {
                     timer: 1200,
                     position: 'bottom-right'
                 });
-                table.ajax.reload()
+                table.ajax.reload(function () {
+                    table.columns.adjust().draw(false);
+                }, false);
 
             },
             error: function (error) {

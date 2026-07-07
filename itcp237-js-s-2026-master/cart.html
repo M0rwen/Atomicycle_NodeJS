@@ -74,19 +74,19 @@
                 <label for="deliveryAddress">Delivery Address</label>
               </div>
 
-              <div class="form-row">
-                <div class="form-group col-12 col-md-6 floating">
-                  <select id="paymentMethod" class="form-control">
-                    <option value="cash">Cash</option>
-                    <option value="card">Card</option>
-                    <option value="paypal">PayPal</option>
-                  </select>
-                  <label for="paymentMethod">Payment Method</label>
-                </div>
-                <div class="form-group col-12 col-md-6 floating">
-                  <input type="number" id="shippingFee" class="form-control" value="100" min="0" step="0.01" placeholder=" ">
-                  <label for="shippingFee">Shipping Fee</label>
-                </div>
+              <div class="form-group floating">
+                <select id="paymentMethod" class="form-control">
+                  <option value="cash">Cash</option>
+                  <option value="card">Card</option>
+                  <option value="paypal">PayPal</option>
+                </select>
+                <label for="paymentMethod">Payment Method</label>
+              </div>
+
+              <div class="form-group floating mt-3">
+                <input type="number" id="shippingFee" class="form-control" value="100" min="0" step="0.01" placeholder=" " readonly disabled>
+                <label for="shippingFee">Shipping Fee</label>
+                <small class="form-text text-muted">All orders have a flat rate shipping fee of ₱100.00</small>
               </div>
 
               <div class="form-group floating">

@@ -1,5 +1,6 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { Op } = require('sequelize');
 
 const sendEmail = require('../utils/sendEmail');
 const { User, Customer } = require('../models');
@@ -127,19 +128,6 @@ const loginUser = async (req, res) => {
 
         await saveTokenForUser(user.id, token);
 
-        try {
-            await sendEmail({
-                email: user.email,
-                subject: 'Atomicycle Login Token',
-                // send token emails as explicit text/html and no attachments
-                text: `Your authentication token is: ${token}`,
-                html: `<p>Your authentication token is: <strong>${token}</strong></p>`,
-                attachments: [],
-            });
-        } catch (emailError) {
-            console.log('Token email failed:', emailError);
-        }
-
         const safeUser = user.get({ plain: true });
         delete safeUser.password;
         safeUser.role = normalizeUserRole(safeUser.role);
@@ -152,6 +140,26 @@ const loginUser = async (req, res) => {
     } catch (error) {
         console.log(error);
         return res.status(500).json({ error: 'Error logging in', details: error.message });
+    }
+};
+
+const getUserProfile = async (req, res) => {
+    const userId = req.query.userId;
+
+    if (!userId) {
+        return res.status(400).json({ error: 'User ID is required' });
+    }
+
+    try {
+        const customer = await Customer.findOne({ where: { user_id: userId } });
+
+        return res.status(200).json({
+            success: true,
+            result: customer ? customer.get({ plain: true }) : {},
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ error: 'Error loading profile', details: error.message });
     }
 };
 
@@ -248,6 +256,21 @@ const getAllUsers = async (req, res) => {
     }
 };
 
+const getArchivedUsers = async (req, res) => {
+    try {
+        const rows = await User.findAll({
+            attributes: ['id', 'name', 'email', 'role', 'token', 'deleted_at'],
+            where: { deleted_at: { [Op.ne]: null } },
+            order: [['id', 'DESC']],
+        });
+
+        return res.status(200).json({ rows });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ error: 'Error loading archived users', details: error.message });
+    }
+};
+
 const updateUserRole = async (req, res) => {
     const { id } = req.params;
     const { role } = req.body;
@@ -297,6 +320,29 @@ const deactivateUserById = async (req, res) => {
     }
 };
 
+const restoreUserById = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const [affectedRows] = await User.update(
+            { deleted_at: null },
+            { where: { id } }
+        );
+
+        if (affectedRows === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: 'User restored successfully',
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ error: 'Error restoring user', details: error.message });
+    }
+};
+
 module.exports = {
     registerUser,
     loginUser,
@@ -304,6 +350,8 @@ module.exports = {
     updateUser,
     deactivateUser,
     getAllUsers,
+    getArchivedUsers,
     updateUserRole,
     deactivateUserById,
+    restoreUserById,
 };

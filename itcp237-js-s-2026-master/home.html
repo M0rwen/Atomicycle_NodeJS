@@ -164,7 +164,7 @@
             <h1 class="hero-title">Atomicycle</h1>
             <p class="hero-tagline">Gear Up. Ride Safe.</p>
             <p class="hero-copy">Explore durable helmets, protective gear, and riding accessories that keep every trip comfortable, safe, and ready for the road.</p>
-            <a href="#products" class="btn btn-primary hero-cta">Shop Now</a>
+            <a href="browse.html" class="btn btn-primary hero-cta">Shop Now</a>
           </div>
         </div>
       </div>
@@ -182,7 +182,7 @@
               <div class="hero-content">
                 <h2 class="hero-title">Full Face Helmets</h2>
                 <p class="hero-tagline">Maximum coverage for city commutes and long rides.</p>
-                <a href="#featuredItems" class="btn btn-primary hero-cta category-filter-link" data-category="fullface">View All</a>
+                <a href="#items-section" class="btn btn-primary hero-cta category-filter-link" data-category="fullface">View All</a>
               </div>
             </div>
           </section>
@@ -193,7 +193,7 @@
               <div class="hero-content">
                 <h2 class="hero-title">Half Face Helmets</h2>
                 <p class="hero-tagline">Lightweight comfort for easy everyday riding.</p>
-                <a href="#featuredItems" class="btn btn-primary hero-cta category-filter-link" data-category="halfface">View All</a>
+                <a href="#items-section" class="btn btn-primary hero-cta category-filter-link" data-category="halfface">View All</a>
               </div>
             </div>
           </section>
@@ -204,7 +204,7 @@
               <div class="hero-content">
                 <h2 class="hero-title">Riding Gear</h2>
                 <p class="hero-tagline">Protective apparel for confident and comfortable rides.</p>
-                <a href="#featuredItems" class="btn btn-primary hero-cta category-filter-link" data-category="ridinggear">View All</a>
+                <a href="#items-section" class="btn btn-primary hero-cta category-filter-link" data-category="ridinggear">View All</a>
               </div>
             </div>
           </section>
@@ -212,12 +212,18 @@
       </div>
     </section>
 
-    <section id="featuredItems" class="container py-4">
+    <section id="items-section" class="container py-4">
       <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
         <h2 class="section-title mb-0">Featured Items</h2>
-        <a href="#items" class="btn btn-outline-primary btn-sm">Browse All</a>
+        <a href="browse.html" class="btn btn-outline-primary btn-sm">Browse All</a>
       </div>
       <div id="featuredItemsGrid" class="row"></div>
+      <div id="featuredItemsLoader" class="text-center py-3 d-none">
+        <div class="spinner-border text-primary" role="status">
+          <span class="sr-only">Loading...</span>
+        </div>
+      </div>
+      <div id="featuredItemsStatus" class="text-center text-muted py-3 d-none"></div>
     </section>
 
     <section class="container py-5" id="items">

@@ -120,7 +120,7 @@ $(document).ready(function () {
         const deliveryPhone = $('#deliveryPhone').val().trim();
         const deliveryAddress = $('#deliveryAddress').val().trim();
         const paymentMethod = $('#paymentMethod').val();
-        const shippingFee = parseFloat($('#shippingFee').val()) || 0;
+        const shippingFee = 100;
         const orderNotes = $('#orderNotes').val().trim();
 
         if (!ensureLoggedIn()) {

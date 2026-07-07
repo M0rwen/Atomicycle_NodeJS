@@ -100,17 +100,17 @@ const normalizeItem = (item) => {
 exports.getAllItems = async (req, res) => {
     try {
         const search = (req.query.search || '').trim();
-        const where = search
-            ? {
-                [Op.or]: [
-                    { description: { [Op.like]: `%${search}%` } },
-                    { description: { [Op.like]: `%${search.toLowerCase()}%` } },
-                ],
-            }
-            : undefined;
+        const where = { deleted_at: null };
+
+        if (search) {
+            where[Op.or] = [
+                { description: { [Op.like]: `%${search}%` } },
+                { description: { [Op.like]: `%${search.toLowerCase()}%` } },
+            ];
+        }
 
         const rows = await Item.findAll({
-            ...(where ? { where } : {}),
+            where,
             include: [{ model: Stock }],
             order: [['item_id', 'DESC']],
         });
@@ -129,7 +129,7 @@ exports.getSingleItem = async (req, res) => {
 
     try {
         const result = await Item.findAll({
-            where: { item_id: id },
+            where: { item_id: id, deleted_at: null },
             include: [{ model: Stock }],
         });
 
@@ -242,28 +242,70 @@ exports.updateItem = async (req, res) => {
     }
 };
 
+exports.getArchivedItems = async (req, res) => {
+    try {
+        const rows = await Item.findAll({
+            where: { deleted_at: { [Op.ne]: null } },
+            include: [{ model: Stock }],
+            order: [['item_id', 'DESC']],
+        });
+
+        return res.status(200).json({
+            rows: rows.map(normalizeItem),
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ error: 'Error loading archived items', details: error.message });
+    }
+};
+
+exports.restoreItem = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const [affectedRows] = await Item.update(
+            { deleted_at: null },
+            { where: { item_id: id } }
+        );
+
+        if (affectedRows === 0) {
+            return res.status(404).json({ error: 'Item not found' });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: 'Item restored successfully',
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ error: 'Error restoring item', details: error.message });
+    }
+};
+
 exports.deleteItem = async (req, res) => {
     const id = req.params.id;
     const transaction = await sequelize.transaction();
 
     try {
-        await Stock.destroy({ where: { item_id: id }, transaction });
-        const deletedRows = await Item.destroy({ where: { item_id: id }, transaction });
+        const currentItem = await Item.findByPk(id, { transaction });
 
-        if (deletedRows === 0) {
+        if (!currentItem) {
             await transaction.rollback();
             return res.status(404).json({ error: 'Item not found' });
         }
+
+        const timestamp = new Date();
+        await currentItem.update({ deleted_at: timestamp }, { transaction });
 
         await transaction.commit();
 
         return res.status(200).json({
             success: true,
-            message: 'item deleted',
+            message: 'item archived',
         });
     } catch (error) {
         await transaction.rollback();
         console.log(error);
-        return res.status(500).json({ error: 'Error deleting item', details: error.message });
+        return res.status(500).json({ error: 'Error archiving item', details: error.message });
     }
 };

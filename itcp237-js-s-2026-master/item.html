@@ -47,6 +47,23 @@
       referrerpolicy="no-referrer"
     />
     <link rel="stylesheet" href="css/style.css" />
+    <style>
+      #itable .item-image-preview {
+        width: 50px;
+        height: 60px;
+        object-fit: cover;
+        display: block;
+        border-radius: 4px;
+      }
+
+      #iform .item-image-preview-large {
+        max-width: 200px;
+        max-height: 200px;
+        object-fit: cover;
+        margin-top: 12px;
+        border-radius: 6px;
+      }
+    </style>
     <script
       src="https://code.jquery.com/jquery-3.6.4.min.js"
       integrity="sha256-oP6HI9z1XaZNBrJURtCoUT5SUnxFr8s3BzRl+cbzUq8="
@@ -104,20 +121,13 @@
       referrerpolicy="no-referrer"
     ></script>
 
+    <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.min.js"></script>
     <script src="js/item.js"></script>
   </head>
 
   <body>
     <div id="home"></div>
     <div id="items" class="container">
-      <button
-        type="button"
-        class="btn btn-info btn-lg"
-        data-toggle="modal"
-        data-target="#itemModal"
-      >
-        add<span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
-      </button>
       <div class="card-body" style="height: 210px">
         <input type="text" id="itemSearch" placeholder="--search--" />
       </div>
@@ -196,6 +206,7 @@
                   id="img"
                   name="images"
                   multiple
+                  accept=".jpg,.jpeg,.png"
                 />
               </div>
             </form>
@@ -218,5 +229,6 @@
         </div>
       </div>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.min.js"></script>
   </body>
 </html>

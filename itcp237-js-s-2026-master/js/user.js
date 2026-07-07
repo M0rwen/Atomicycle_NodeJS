@@ -1,6 +1,22 @@
 $(document).ready(function () {
     const url = 'http://localhost:4000/';
 
+    if ($.validator) {
+        $.validator.setDefaults({
+            errorClass: 'text-danger',
+            errorElement: 'div',
+            errorPlacement: function (error, element) {
+                error.insertAfter(element);
+            },
+            highlight: function (element) {
+                $(element).addClass('is-invalid');
+            },
+            unhighlight: function (element) {
+                $(element).removeClass('is-invalid');
+            },
+        });
+    }
+
     function getUserId() {
         const storedUser = sessionStorage.getItem('user');
 
@@ -30,6 +46,63 @@ $(document).ready(function () {
         const role = user?.role;
 
         return role || 'user';
+    }
+
+    function getStoredProfileImage() {
+        const storedUser = sessionStorage.getItem('user');
+        try {
+            const parsedUser = storedUser ? JSON.parse(storedUser) : null;
+            return parsedUser?.profileImage || sessionStorage.getItem('profileImage') || '';
+        } catch (error) {
+            return sessionStorage.getItem('profileImage') || '';
+        }
+    }
+
+    function normalizeImageUrl(imagePath) {
+        if (!imagePath) {
+            return '';
+        }
+
+        if (/^https?:\/\//i.test(imagePath) || imagePath.startsWith('data:') || imagePath.startsWith('blob:')) {
+            return imagePath;
+        }
+
+        const cleanPath = imagePath.replace(/\\/g, '/').replace(/^\/+/, '');
+        return `${url}${cleanPath.startsWith('/') ? cleanPath : '/' + cleanPath}`;
+    }
+
+    function buildProfileImageUrl(imagePath) {
+        if (!imagePath) {
+            return 'https://via.placeholder.com/130?text=Avatar';
+        }
+
+        if (/^https?:\/\//i.test(imagePath) || imagePath.startsWith('data:') || imagePath.startsWith('blob:')) {
+            return imagePath;
+        }
+
+        const cleanPath = String(imagePath).replace(/\\/g, '/').replace(/^\/+/, '');
+        return `${url}${cleanPath.startsWith('/') ? cleanPath : '/' + cleanPath}`;
+    }
+
+    function updateNavbarAvatar(imageSrc) {
+        const accountToggle = $('.account-toggle');
+        if (!accountToggle.length) {
+            return;
+        }
+
+        const avatarUrl = imageSrc ? normalizeImageUrl(imageSrc) : getStoredProfileImage();
+        if (avatarUrl) {
+            accountToggle.html(`<img src="${normalizeImageUrl(avatarUrl)}" alt="Profile" style="width:40px;height:40px;border-radius:50%;object-fit:cover;" />`);
+        } else {
+            accountToggle.html('👤');
+        }
+    }
+
+    function setAvatarPreview(src) {
+        const previewSrc = src ? buildProfileImageUrl(src) : 'https://via.placeholder.com/130?text=Avatar';
+        $('#avatarPreview').attr('src', previewSrc);
+        $('#avatarPreviewForm').attr('src', previewSrc);
+        updateNavbarAvatar(previewSrc);
     }
 
     function showSummaryMode() {
@@ -66,14 +139,70 @@ $(document).ready(function () {
         const displayName = [title, fname, lname].filter(Boolean).join(' ') || getUserName() || 'Guest Rider';
         const email = getUserEmail() || 'No email set';
         const addressText = address || town ? [address, town].filter(Boolean).join(', ') : 'No address added yet';
-        const previewSrc = $('#avatarPreview').attr('src') && $('#avatarPreview').attr('src') !== '#' ? $('#avatarPreview').attr('src') : 'https://via.placeholder.com/130?text=Avatar';
+        const previewSrc = $('#avatarPreview').attr('src') && $('#avatarPreview').attr('src') !== '#' ? $('#avatarPreview').attr('src') : getStoredProfileImage();
 
         $('#summaryName').text(displayName);
         $('#summaryEmail').text(email);
         $('#summaryAddress').text(addressText);
         $('#summaryPhone').text(phone || 'Not provided');
         $('#summaryZip').text(zipcode || 'N/A');
-        $('#avatarPreview, #avatarPreviewForm').attr('src', previewSrc);
+        setAvatarPreview(previewSrc || 'https://via.placeholder.com/130?text=Avatar');
+    }
+
+    function applyProfileResponse(result) {
+        const customer = result || {};
+        $('#firstName').val(customer.fname || '');
+        $('#lastName').val(customer.lname || '');
+        $('#address').val(customer.addressline || '');
+        $('#town').val(customer.town || '');
+        $('#zipcode').val(customer.zipcode || '');
+        $('#phone').val(customer.phone || '');
+
+        const fullName = [$('#title').val().trim(), customer.fname || '', customer.lname || ''].filter(Boolean).join(' ');
+        const storedUser = sessionStorage.getItem('user');
+        const parsedUser = storedUser ? JSON.parse(storedUser) : {};
+        parsedUser.name = fullName || parsedUser.name || getUserName();
+        parsedUser.profileImage = customer.image_path || parsedUser.profileImage || getStoredProfileImage();
+        sessionStorage.setItem('user', JSON.stringify(parsedUser));
+        sessionStorage.setItem('userName', parsedUser.name || getUserName());
+        sessionStorage.setItem('profileImage', parsedUser.profileImage || '');
+        setAvatarPreview(parsedUser.profileImage || '');
+        updateProfileSummary();
+        showSummaryMode();
+    }
+
+    function loadProfileData() {
+        const userId = getUserId();
+        if (!userId) {
+            return;
+        }
+
+        $.ajax({
+            method: 'GET',
+            url: `${url}api/v1/update-profile?userId=${encodeURIComponent(userId)}`,
+            dataType: 'json',
+            success: function (response) {
+                applyProfileResponse(response?.result || {});
+            },
+            error: function (error) {
+                console.error(error);
+                const storedUser = sessionStorage.getItem('user');
+                if (storedUser) {
+                    try {
+                        const parsedUser = JSON.parse(storedUser);
+                        $('#firstName').val(parsedUser.fname || '');
+                        $('#lastName').val(parsedUser.lname || '');
+                        $('#address').val(parsedUser.addressline || '');
+                        $('#phone').val(parsedUser.phone || '');
+                        $('#zipcode').val(parsedUser.zipcode || '');
+                        updateProfileSummary();
+                        setAvatarPreview(parsedUser.profileImage || '');
+                    } catch (error) {
+                        console.error(error);
+                    }
+                }
+            },
+        });
     }
 
     function populateProfileForm(profile) {
@@ -135,6 +264,14 @@ $(document).ready(function () {
     const token = sessionStorage.getItem('token');
     const isLoggedIn = Boolean(token);
 
+    if ($('#dashboardMenu').length) {
+        $('#dashboardMenu').toggleClass('d-none', !(role === 'admin' && isLoggedIn));
+    }
+
+    if ($('#archivesMenu').length) {
+        $('#archivesMenu').toggleClass('d-none', !(role === 'admin' && isLoggedIn));
+    }
+
     if ($('#itemsMenu').length) {
         $('#itemsMenu').toggleClass('d-none', !(role === 'admin' && isLoggedIn));
     }
@@ -168,7 +305,7 @@ $(document).ready(function () {
                 },
                 password: {
                     required: true,
-                    minlength: 6,
+                    minlength: 8,
                 },
             },
             messages: {
@@ -182,7 +319,7 @@ $(document).ready(function () {
                 },
                 password: {
                     required: 'Password is required',
-                    minlength: 'Password must be at least 6 characters',
+                    minlength: 'Password must be at least 8 characters',
                 },
             },
             submitHandler: function () {
@@ -231,7 +368,6 @@ $(document).ready(function () {
                 },
                 password: {
                     required: true,
-                    minlength: 6,
                 },
             },
             messages: {
@@ -241,7 +377,6 @@ $(document).ready(function () {
                 },
                 password: {
                     required: 'Password is required',
-                    minlength: 'Password must be at least 6 characters',
                 },
             },
             submitHandler: function () {
@@ -303,8 +438,7 @@ $(document).ready(function () {
         if (file) {
             const reader = new FileReader();
             reader.onload = function (e) {
-                $('#avatarPreview').attr('src', e.target.result);
-                $('#avatarPreviewForm').attr('src', e.target.result);
+                setAvatarPreview(e.target.result);
             };
             reader.readAsDataURL(file);
         }
@@ -432,6 +566,7 @@ $(document).ready(function () {
                 $logoutLink.removeClass('d-none');
             }
         }
+        updateNavbarAvatar(getStoredProfileImage());
     });
 
     $(document).on('click', '#logout', function (e) {
@@ -454,5 +589,7 @@ $(document).ready(function () {
     if ($('#profileSummary').length) {
         loadProfile();
         showSummaryMode();
+        updateNavbarAvatar(getStoredProfileImage());
+        loadProfileData();
     }
 });

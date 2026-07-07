@@ -10,6 +10,10 @@ $(document).ready(function () {
   let infinitePage = 1;
   let loadingMore = false;
   let activeCategory = 'all';
+  let featuredItems = [];
+  let featuredOffset = 0;
+  let featuredLoading = false;
+  let featuredHasMore = true;
 
   const getUserId = () => {
     const raw = sessionStorage.getItem('user');
@@ -147,16 +151,68 @@ $(document).ready(function () {
       </div>`;
   }
 
-  const renderFeaturedItems = (items) => {
-    const featuredItems = (items || []).slice(0, 6);
-    const featuredGrid = $('#featuredItemsGrid');
-
-    if (!featuredItems.length) {
-      featuredGrid.html('<div class="col-12"><p class="text-muted">No featured items available right now.</p></div>');
+  const loadMoreFeaturedItems = (reset = false) => {
+    if (featuredLoading) {
       return;
     }
 
-    featuredGrid.html(featuredItems.map(buildFeaturedItemCard).join(''));
+    if (reset) {
+      featuredOffset = 0;
+      featuredHasMore = true;
+      $('#featuredItemsGrid').empty();
+      $('#featuredItemsStatus').addClass('d-none').text('');
+    }
+
+    if (!featuredHasMore) {
+      return;
+    }
+
+    featuredLoading = true;
+    $('#featuredItemsLoader').removeClass('d-none');
+
+    setTimeout(() => {
+      const nextItems = featuredItems.slice(featuredOffset, featuredOffset + 4);
+      featuredOffset += nextItems.length;
+
+      if (!nextItems.length) {
+        featuredHasMore = false;
+        $('#featuredItemsLoader').addClass('d-none');
+        $('#featuredItemsStatus').removeClass('d-none').text('No more items');
+        featuredLoading = false;
+        return;
+      }
+
+      $('#featuredItemsGrid').append(nextItems.map(buildFeaturedItemCard).join(''));
+
+      if (featuredOffset >= featuredItems.length) {
+        featuredHasMore = false;
+        $('#featuredItemsStatus').removeClass('d-none').text('No more items');
+      } else {
+        $('#featuredItemsStatus').addClass('d-none').text('');
+      }
+
+      $('#featuredItemsLoader').addClass('d-none');
+      featuredLoading = false;
+    }, 400);
+  }
+
+  const renderFeaturedItems = (items) => {
+    featuredItems = Array.isArray(items) ? items.slice() : [];
+    featuredOffset = 0;
+    featuredLoading = false;
+    featuredHasMore = true;
+
+    const featuredGrid = $('#featuredItemsGrid');
+    featuredGrid.empty();
+    $('#featuredItemsStatus').addClass('d-none').text('');
+
+    if (!featuredItems.length) {
+      featuredGrid.html('<div class="col-12"><p class="text-muted">No featured items available right now.</p></div>');
+      featuredHasMore = false;
+      return;
+    }
+
+    loadMoreFeaturedItems(true);
   }
 
   const updateActiveFilterButtons = () => {
@@ -165,7 +221,7 @@ $(document).ready(function () {
   }
 
   const scrollToFeaturedItems = () => {
-    const featuredSection = document.getElementById('featuredItems');
+    const featuredSection = document.getElementById('items-section');
     if (featuredSection) {
       featuredSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
@@ -320,6 +376,17 @@ $(document).ready(function () {
   });
 
   $(window).on('scroll', function () {
+    if ($('#items-section').length) {
+      const scrollTop = $(window).scrollTop();
+      const windowHeight = $(window).height();
+      const featuredSectionTop = $('#items-section').offset().top;
+      const featuredSectionHeight = $('#items-section').height();
+
+      if (scrollTop + windowHeight >= featuredSectionTop + featuredSectionHeight - 100) {
+        loadMoreFeaturedItems();
+      }
+    }
+
     if (loadingMore) {
       return;
     }

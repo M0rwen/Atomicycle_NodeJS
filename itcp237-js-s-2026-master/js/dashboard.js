@@ -1,16 +1,14 @@
 $(document).ready(function () {
     const url = 'http://localhost:4000/'
     const palette = [
-        '#4e79a7',
-        '#f28e2b',
-        '#e15759',
-        '#76b7b2',
-        '#59a14f',
-        '#edc948',
-        '#b07aa1',
-        '#ff9da7',
-        '#9c755f',
-        '#bab0ab',
+        '#2a9d8f',
+        '#34a853',
+        '#43aa8b',
+        '#4caf50',
+        '#66bb6a',
+        '#8bc34a',
+        '#a5d6a7',
+        '#26a69a',
     ];
 
     const buildColors = (count) => Array.from({ length: count }, (_, index) => palette[index % palette.length]);
@@ -48,29 +46,27 @@ $(document).ready(function () {
             "Authorization": "Bearer " + getToken()
         },
         success: function (data) {
-            const { rows } = data
+            const rows = data.rows || [];
             createChart('addressChart', {
-                type: 'bar',
+                type: 'pie',
                 data: {
-                    labels: rows.map(item => item.addressline),
+                    labels: rows.map(item => item.addressline || 'Unknown'),
                     datasets: [{
-                        label: 'Number of Customers per town',
-                        data: rows.map(item => item.total),
+                        label: 'Orders by Location',
+                        data: rows.map(item => Number(item.total || 0)),
                         backgroundColor: buildColors(rows.length),
                         borderColor: '#ffffff',
                         borderWidth: 1,
-
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        },
                     },
-                    indexAxis: 'y',
                 },
             });
         },
@@ -87,16 +83,16 @@ $(document).ready(function () {
             "Authorization": "Bearer " + getToken()
         },
         success: function (data) {
-            const { rows } = data
+            const rows = data.rows || [];
             createChart('salesChart', {
                 type: 'line',
                 data: {
-                    labels: rows.map(item => item.month),
+                    labels: rows.map(item => item.month || 'Unknown'),
                     datasets: [{
-                        label: 'Monthly sales',
-                        data: rows.map(item => item.total),
-                        borderColor: '#4e79a7',
-                        backgroundColor: 'rgba(78, 121, 167, 0.18)',
+                        label: 'Total Sales (PHP)',
+                        data: rows.map(item => Number(item.total || 0)),
+                        borderColor: '#2a9d8f',
+                        backgroundColor: 'rgba(42, 157, 143, 0.18)',
                         fill: true,
                         tension: 0.35,
                         borderWidth: 2,
@@ -107,7 +103,12 @@ $(document).ready(function () {
                     maintainAspectRatio: false,
                     scales: {
                         y: {
-                            beginAtZero: true
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function (value) {
+                                    return '₱' + Number(value).toFixed(0);
+                                },
+                            },
                         }
                     }
                 },
@@ -127,30 +128,41 @@ $(document).ready(function () {
             "Authorization": "Bearer " + getToken()
         },
         success: function (data) {
-            const { rows } = data
+            const rows = data.rows || [];
             createChart('itemsChart', {
-                type: 'pie',
+                type: 'bar',
                 data: {
-                    labels: rows.map(item => item.items),
+                    labels: rows.map(item => item.items || 'Unknown'),
                     datasets: [{
-                        label: 'number of items sold',
-                        data: rows.map(item => item.total),
+                        label: 'Quantity Sold',
+                        data: rows.map(item => Number(item.total || 0)),
                         backgroundColor: buildColors(rows.length),
-                        borderColor: '#ffffff',
+                        borderColor: '#2a9d8f',
                         borderWidth: 1,
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0,
+                            },
+                        },
+                        x: {
+                            ticks: {
+                                autoSkip: false,
+                            },
+                        },
+                    },
                     plugins: {
                         legend: {
-                            position: 'bottom'
+                            display: false,
                         },
-                    }
+                    },
                 }
-
-
             });
 
         },

@@ -79,6 +79,10 @@ const Item = sequelize.define('Item', {
         type: DataTypes.TEXT,
         allowNull: true,
     },
+    deleted_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
+    },
 }, {
     tableName: 'item',
 });
@@ -173,6 +177,47 @@ const OrderLine = sequelize.define('OrderLine', {
     tableName: 'orderline',
 });
 
+const Review = sequelize.define('Review', {
+    review_id: {
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
+        primaryKey: true,
+    },
+    user_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+    },
+    item_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+    },
+    orderinfo_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+    },
+    rating: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+    },
+    comment: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+    },
+    created_at: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+    },
+    updated_at: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+    },
+}, {
+    tableName: 'reviews',
+    timestamps: false,
+});
+
 User.hasOne(Customer, { foreignKey: 'user_id' });
 Customer.belongsTo(User, { foreignKey: 'user_id' });
 
@@ -188,6 +233,10 @@ Stock.belongsTo(Item, { foreignKey: 'item_id' });
 OrderLine.belongsTo(Item, { foreignKey: 'item_id' });
 Item.hasMany(OrderLine, { foreignKey: 'item_id' });
 
+Review.belongsTo(User, { foreignKey: 'user_id' });
+Review.belongsTo(Item, { foreignKey: 'item_id' });
+Item.hasMany(Review, { foreignKey: 'item_id' });
+
 module.exports = {
     sequelize,
     User,
@@ -196,4 +245,5 @@ module.exports = {
     Stock,
     OrderInfo,
     OrderLine,
+    Review,
 };
